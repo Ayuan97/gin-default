@@ -1,10 +1,10 @@
 package util
 
 import (
-	"github.com/unknwon/com"
 	"github.com/gin-gonic/gin"
+	"github.com/unknwon/com"
 
-	"justus/pkg/setting"
+	"gin-default/pkg/setting"
 )
 
 // GetPage get page parameters

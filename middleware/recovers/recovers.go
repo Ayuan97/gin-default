@@ -2,9 +2,9 @@ package recovers
 
 import (
 	"fmt"
+	"gin-default/global"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"justus/global"
 	"runtime"
 )
 

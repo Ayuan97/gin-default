@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 
-	"justus/pkg/e"
+	"gin-default/pkg/e"
 )
 
 type Gin struct {

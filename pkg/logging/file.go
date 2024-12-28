@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"justus/pkg/setting"
+	"gin-default/pkg/setting"
 )
 
 // getLogFilePath get the logs file save path

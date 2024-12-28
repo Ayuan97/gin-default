@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 
-	"justus/pkg/e"
+	"gin-default/pkg/e"
 )
 
 // BindAndValid binds and validates data

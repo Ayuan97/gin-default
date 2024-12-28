@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"justus/pkg/setting"
+	"gin-default/pkg/setting"
 )
 
 func AesEncryptCBC(origData []byte) (encrypted []byte) {

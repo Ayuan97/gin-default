@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
+	"gin-default/models"
+	"gin-default/pkg/glange"
+	"gin-default/pkg/gredis"
+	"gin-default/pkg/logger"
+	"gin-default/pkg/setting"
+	"gin-default/pkg/util"
+	"gin-default/routers"
 	"github.com/gin-gonic/gin"
-	"justus/models"
-	"justus/pkg/glange"
-	"justus/pkg/gredis"
-	"justus/pkg/logger"
-	"justus/pkg/setting"
-	"justus/pkg/util"
-	"justus/routers"
 	"log"
 	"net/http"
 )
@@ -42,7 +42,6 @@ func main() {
 	}
 
 	log.Printf("[info] start http server listening %s", endPoint)
-
 
 	err := server.ListenAndServe()
 	if err != nil {

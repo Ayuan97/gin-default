@@ -1,8 +1,8 @@
 package jwt
 
 import (
-	"justus/pkg/e"
-	"justus/pkg/util"
+	"gin-default/pkg/e"
+	"gin-default/pkg/util"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,9 +40,9 @@ func JWT() gin.HandlerFunc {
 				}
 			}
 			if claims != nil {
-				userId,_ := strconv.Atoi(claims.Subject)
+				userId, _ := strconv.Atoi(claims.Subject)
 				//User.ExpiresAt = int(claims.ExpiresAt)
-				c.Set("userId",userId)
+				c.Set("userId", userId)
 				//fmt.Println("token:",token,"claims",claims)
 			}
 

@@ -3,10 +3,10 @@ package bodyLog
 import (
 	"bytes"
 	"encoding/json"
+	"gin-default/global"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
-	"justus/global"
 	"strings"
 )
 

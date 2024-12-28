@@ -3,27 +3,27 @@ package sign
 import (
 	"encoding/json"
 	"fmt"
+	"gin-default/pkg/e"
+	"gin-default/pkg/gredis"
+	"gin-default/pkg/rediskey"
+	"gin-default/pkg/util"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
-	"justus/pkg/e"
-	"justus/pkg/gredis"
-	"justus/pkg/rediskey"
-	"justus/pkg/util"
 	"strconv"
 	"strings"
 )
 
-// VerifySignature type Header struct {
-//	Sign string `json:"sign"`
-//	Version string `json:"version"`
-//	Uuid string `json:"uuid"`
-//	DeviceType string `json:"DeviceType"`
-//	DeviceBrand string `json:"DeviceBrand"`
-//	DeviceVersion string `json:"DeviceVersion"`
-//	Lange string `json:"lange"`
-//	TimeZone string `json:"timeZone"`
-//	Authorization string `json:"Authorization"`
-//}
+//	VerifySignature type Header struct {
+//		Sign string `json:"sign"`
+//		Version string `json:"version"`
+//		Uuid string `json:"uuid"`
+//		DeviceType string `json:"DeviceType"`
+//		DeviceBrand string `json:"DeviceBrand"`
+//		DeviceVersion string `json:"DeviceVersion"`
+//		Lange string `json:"lange"`
+//		TimeZone string `json:"timeZone"`
+//		Authorization string `json:"Authorization"`
+//	}
 func VerifySignature() gin.HandlerFunc {
 
 	return func(c *gin.Context) {

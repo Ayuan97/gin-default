@@ -2,8 +2,8 @@ package models
 
 import (
 	"fmt"
-	"justus/global"
-	"justus/pkg/setting"
+	"gin-default/global"
+	"gin-default/pkg/setting"
 	"strings"
 )
 
@@ -37,7 +37,7 @@ type UserInfo struct {
 	FansNum         int    `json:"fans_num"`         //粉丝数量w
 }
 
-//图片地址拼接
+// 图片地址拼接
 func (u *User) getUrl() string {
 	if strings.Contains(u.Avatar, "http") {
 		return u.Avatar

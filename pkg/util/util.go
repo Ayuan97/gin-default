@@ -3,7 +3,7 @@ package util
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"justus/pkg/setting"
+	"gin-default/pkg/setting"
 	"sort"
 	"strings"
 )
@@ -13,7 +13,7 @@ func Setup() {
 	jwtSecret = []byte(setting.AppSetting.JwtSecret)
 }
 
-//数字转换
+// 数字转换
 func NumTransform(number int) int {
 	return number
 	//if number > 1000000{
@@ -28,7 +28,7 @@ func NumTransform(number int) int {
 	//return fmt.Sprintf("%d",number)
 }
 
-//获取图片链接
+// 获取图片链接
 func GetImageUrl(imagePath string) string {
 	if strings.Contains(imagePath, "http") {
 		return imagePath
@@ -53,7 +53,7 @@ func In(i int, intArray []int) int {
 	return 0
 }
 
-//通过map键的唯一性去重
+// 通过map键的唯一性去重
 func RemoveRepeatedElement(s []int) []int {
 	result := make([]int, 0)
 	m := make(map[int]bool) //map的值不重要

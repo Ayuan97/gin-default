@@ -6,9 +6,9 @@ import (
 	"github.com/boombuler/barcode"
 	"github.com/boombuler/barcode/qr"
 
-	"justus/pkg/file"
-	"justus/pkg/setting"
-	"justus/pkg/util"
+	"gin-default/pkg/file"
+	"gin-default/pkg/setting"
+	"gin-default/pkg/util"
 )
 
 type QrCode struct {

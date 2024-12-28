@@ -1,11 +1,11 @@
 package logger
 
 import (
+	"gin-default/global"
+	"gin-default/pkg/setting"
 	"github.com/kenshaw/sdhook"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"justus/global"
-	"justus/pkg/setting"
 	"log"
 )
 
@@ -24,8 +24,8 @@ func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 		}
 	case setting.LogFileLogging:
 		hook, err := sdhook.New(
-			sdhook.GoogleServiceAccountCredentialsFile("google-tactile-alloy-283608.json"),
-			sdhook.LogName("justus.api.production"),
+		//sdhook.GoogleServiceAccountCredentialsFile("google-tactile-alloy-283608.json"),
+		//sdhook.LogName("gin-default.api.production"),
 		)
 		if err != nil {
 			logger.Fatal(err)

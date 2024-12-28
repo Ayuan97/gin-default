@@ -8,10 +8,10 @@ import (
 	"path"
 	"strings"
 
-	"justus/pkg/file"
-	"justus/pkg/logging"
-	"justus/pkg/setting"
-	"justus/pkg/util"
+	"gin-default/pkg/file"
+	"gin-default/pkg/logging"
+	"gin-default/pkg/setting"
+	"gin-default/pkg/util"
 )
 
 // GetImageFullUrl get the full access path

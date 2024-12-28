@@ -2,7 +2,7 @@ package logging
 
 import (
 	"fmt"
-	"justus/pkg/file"
+	"gin-default/pkg/file"
 	"log"
 	"os"
 	"path/filepath"

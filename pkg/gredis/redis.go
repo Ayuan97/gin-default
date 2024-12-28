@@ -2,9 +2,9 @@ package gredis
 
 import (
 	"context"
+	"gin-default/global"
+	"gin-default/pkg/setting"
 	"github.com/go-redis/redis/v8"
-	"justus/global"
-	"justus/pkg/setting"
 	"strconv"
 	"time"
 )
@@ -101,7 +101,7 @@ func Decr(key string) (int64, error) {
 	return val, nil
 }
 
-//无序集合相关
+// 无序集合相关
 func SAdd(key string, members ...interface{}) (res int64, err error) {
 	key = setting.RedisSetting.Prefix + key
 	val, err := global.Redis.SAdd(ctx, key, members).Result()
@@ -201,7 +201,7 @@ func Zrevrange(key string, start int64, end int64) (res []string, err error) {
 	return val, nil
 }
 
-//队列  入队列
+// 队列  入队列
 func LPush(key string, values ...interface{}) (res int64, err error) {
 	key = setting.RedisSetting.Prefix + key
 	result, err := global.Redis.LPush(ctx, key, values).Result()
@@ -213,7 +213,7 @@ func LPush(key string, values ...interface{}) (res int64, err error) {
 
 }
 
-//队列  出队列
+// 队列  出队列
 func RPop(key string) (res string, err error) {
 	key = setting.RedisSetting.Prefix + key
 	result, err := global.Redis.RPop(ctx, key).Result()

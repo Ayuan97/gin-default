@@ -1,9 +1,9 @@
 package dao
 
 import (
-	"justus/global"
-	"justus/models"
-	"justus/pkg/util"
+	"gin-default/global"
+	"gin-default/models"
+	"gin-default/pkg/util"
 )
 
 func GetUserInfo(uid int) (*models.User, error) {

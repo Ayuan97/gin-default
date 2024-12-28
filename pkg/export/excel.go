@@ -1,6 +1,6 @@
 package export
 
-import "justus/pkg/setting"
+import "gin-default/pkg/setting"
 
 const EXT = ".xlsx"
 
