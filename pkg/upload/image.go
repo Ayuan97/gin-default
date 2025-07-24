@@ -2,14 +2,13 @@ package upload
 
 import (
 	"fmt"
-	"log"
 	"mime/multipart"
 	"os"
 	"path"
 	"strings"
 
+	"justus/internal/global"
 	"justus/pkg/file"
-	"justus/pkg/logging"
 	"justus/pkg/setting"
 	"justus/pkg/util"
 )
@@ -54,8 +53,9 @@ func CheckImageExt(fileName string) bool {
 func CheckImageSize(f multipart.File) bool {
 	size, err := file.GetSize(f)
 	if err != nil {
-		log.Println(err)
-		logging.Warn(err)
+		if global.Logger != nil {
+			global.Logger.WithError(err).Warn("获取文件大小失败")
+		}
 		return false
 	}
 
