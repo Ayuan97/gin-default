@@ -1,0 +1,43 @@
+app:
+  PageSize: 20
+  JwtSecret: M2lTP9APLdRY6TA5RC42rz5AkxsgoAZNdVx1bC2XQXlh2pxEJ5waB5EIKfp4CHfM
+  PrefixUrl: http://127.0.0.1:8000
+  ImageUrl: https://assets.itsjust.us
+  AesKey: 65kzw31az4tmo00r
+  RuntimeRootPath: runtime/
+  LogSavePath: logs/
+  LogSaveName: log
+  LogFileExt: log
+  TimeFormat: 20060102
+
+server:
+  RunMode: release
+  HttpPort: 8787
+  ReadTimeout: 60
+  WriteTimeout: 60
+
+database:
+  Type: mysql
+  User: root
+  Password: root
+  Host: 127.0.0.1:3306
+  Name: justus
+  TablePrefix: ay_
+  LogLevel: 2
+  ParseTime: true
+  Charset: utf8mb4
+
+redis:
+  DB: 1
+  Host: 127.0.0.1:6379
+  Password: ""
+  MaxIdle: 30
+  MaxActive: 30
+  IdleTimeout: 200
+  Prefix: "justus:"
+
+log:
+  LogType: logger
+  LogFileSavePath: storage/logs
+  LogFileName: app
+  LogFileExt: .log
