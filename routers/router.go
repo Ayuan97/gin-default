@@ -18,6 +18,12 @@ func InitRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), recovers.Recover(), bodyLog.GinBodyLogMiddleware())
 
+	// 健康检查接口（无需认证）
+	r.GET("/health", api.Health)
+	r.GET("/healthz", api.Health)
+	r.GET("/ready", api.Readiness)
+	r.GET("/live", api.Liveness)
+
 	// API模块路由组
 	apiGroup := r.Group("/api/v1")
 	apiGroup.Use(api_require.Common())
@@ -28,11 +34,11 @@ func InitRouter() *gin.Engine {
 		apiGroup.POST("/test", api.Test)
 
 		// 用户相关接口
-		apiGroup.GET("/users", api.GetUsers)           // 获取用户列表
-		apiGroup.GET("/users/:uid", api.GetUser)       // 获取单个用户
-		apiGroup.POST("/users", api.CreateUser)        // 创建用户
-		apiGroup.PUT("/users/:uid", api.UpdateUser)    // 更新用户
-		apiGroup.DELETE("/users/:uid", api.DeleteUser) // 删除用户
+		apiGroup.GET("/users", api.GetUsers)          // 获取用户列表
+		apiGroup.GET("/users/:id", api.GetUser)       // 获取单个用户
+		apiGroup.POST("/users", api.CreateUser)       // 创建用户
+		apiGroup.PUT("/users/:id", api.UpdateUser)    // 更新用户
+		apiGroup.DELETE("/users/:id", api.DeleteUser) // 删除用户
 
 		// 用户个人相关接口
 		apiGroup.GET("/profile", api.GetProfile)    // 获取个人信息
@@ -49,12 +55,12 @@ func InitRouter() *gin.Engine {
 		adminGroup.POST("/test", adminController.Test)
 
 		// 用户管理
-		adminGroup.GET("/users", adminController.GetUsers)                     // 获取用户列表
-		adminGroup.GET("/users/:uid", adminController.GetUser)                 // 获取单个用户详情
-		adminGroup.POST("/users", adminController.CreateUser)                  // 创建用户
-		adminGroup.PUT("/users/:uid", adminController.UpdateUser)              // 更新用户
-		adminGroup.DELETE("/users/:uid", adminController.DeleteUser)           // 删除用户
-		adminGroup.PUT("/users/:uid/status", adminController.UpdateUserStatus) // 更新用户状态
+		adminGroup.GET("/users", adminController.GetUsers)                    // 获取用户列表
+		adminGroup.GET("/users/:id", adminController.GetUser)                 // 获取单个用户详情
+		adminGroup.POST("/users", adminController.CreateUser)                 // 创建用户
+		adminGroup.PUT("/users/:id", adminController.UpdateUser)              // 更新用户
+		adminGroup.DELETE("/users/:id", adminController.DeleteUser)           // 删除用户
+		adminGroup.PUT("/users/:id/status", adminController.UpdateUserStatus) // 更新用户状态
 
 		// 系统管理
 		adminGroup.GET("/system/info", adminController.GetSystemInfo)   // 获取系统信息

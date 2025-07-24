@@ -2,3 +2,7 @@
 /storage/*
 /runtime/*
 /tmp/*
+/justus-go
+/migrate
+/tmp/
+/bin/

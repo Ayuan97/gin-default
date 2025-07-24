@@ -23,15 +23,15 @@ type UserRequest struct {
 func GetUser(c *gin.Context) {
 	appG := app.Gin{C: c}
 
-	uidStr := c.Param("uid")
-	uid, err := strconv.Atoi(uidStr)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		appG.InvalidParams()
 		return
 	}
 
 	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(uid)
+	user, err := userService.GetUserInfo(id)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
@@ -120,7 +120,7 @@ func CreateUser(c *gin.Context) {
 
 	appG.Success(gin.H{
 		"message": "用户创建成功",
-		"user_id": user.Uid,
+		"user_id": user.ID,
 	})
 }
 
@@ -128,8 +128,8 @@ func CreateUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	appG := app.Gin{C: c}
 
-	uidStr := c.Param("uid")
-	uid, err := strconv.Atoi(uidStr)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		appG.InvalidParams()
 		return
@@ -143,7 +143,7 @@ func UpdateUser(c *gin.Context) {
 
 	// 检查用户是否存在
 	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(uid)
+	user, err := userService.GetUserInfo(id)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
@@ -172,8 +172,8 @@ func UpdateUser(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	appG := app.Gin{C: c}
 
-	uidStr := c.Param("uid")
-	uid, err := strconv.Atoi(uidStr)
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		appG.InvalidParams()
 		return
@@ -181,7 +181,7 @@ func DeleteUser(c *gin.Context) {
 
 	// 检查用户是否存在
 	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(uid)
+	user, err := userService.GetUserInfo(id)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
@@ -195,7 +195,7 @@ func DeleteUser(c *gin.Context) {
 
 	appG.Success(gin.H{
 		"message": "用户删除成功",
-		"uid":     uid,
+		"id":      id,
 	})
 }
 

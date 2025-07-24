@@ -7,7 +7,7 @@ import (
 // GetAdminUserInfo 获取管理员用户信息
 func GetAdminUserInfo(id int) (*models.AdminUser, error) {
 	adminUser := models.AdminUser{
-		ID: id,
+		ID: uint(id),
 	}
 	return adminUser.GetAdminUserInfo()
 }

@@ -5,30 +5,30 @@ import (
 	"justus/pkg/util"
 )
 
-func GetUserInfo(uid int) (*models.User, error) {
+func GetUserInfo(id int) (*models.User, error) {
 	user := models.User{
-		Uid: uid,
+		ID: uint(id),
 	}
 	return user.GetUserInfo()
 
 }
 
-func GetUserInfoUidKey(userIDs []int) (map[int]interface{}, error) {
+func GetUserInfoIDKey(userIDs []int) (map[int]interface{}, error) {
 	users, _ := GetUsersByIDs(userIDs)
-	userUidKey := make(map[int]interface{})
+	userIDKey := make(map[int]interface{})
 	for _, v := range users {
-		userUidKey[v.Uid] = models.User{
-			Uid:       v.Uid,
+		userIDKey[int(v.ID)] = models.User{
+			ID:        v.ID,
 			FirstName: v.FirstName,
 			LastName:  v.LastName,
 			Avatar:    util.GetImageUrl(v.Avatar),
 		}
 	}
-	return userUidKey, nil
+	return userIDKey, nil
 
 }
 
-func GetUsersByIDs(uids []int) ([]*models.User, error) {
+func GetUsersByIDs(ids []int) ([]*models.User, error) {
 	user := models.User{}
-	return user.GetUsersByIDs(uids)
+	return user.GetUsersByIDs(ids)
 }

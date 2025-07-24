@@ -1,0 +1,111 @@
+# Justus Go API 项目规则
+
+## 项目概述
+Justus 是一个基于 Gin 框架的企业级 Go Web API 项目模版，采用双模块架构：
+- **API模块** (`/api/v1/*`): 面向前端用户，包含签名验证
+- **Admin模块** (`/admin/v1/*`): 面向管理员，包含权限控制
+
+## 技术栈
+- Web框架: Gin
+- 数据库: MySQL + GORM ORM
+- 缓存: Redis (前缀: `justus:`)
+- 认证: JWT
+- 权限: RBAC
+- 日志: Logrus
+- 国际化: 50+语言支持
+
+## 核心功能模块
+1. **用户系统**: 普通用户(User) + 管理员用户(AdminUser)
+2. **权限系统**: RBAC角色权限控制
+3. **认证安全**: JWT + 请求签名验证
+4. **系统功能**: 日志、缓存、文件上传、定时任务
+
+## 目录结构
+```
+├── cmd/                    # 程序入口
+├── conf/                   # 配置文件
+├── internal/               # 内部代码
+│   ├── middleware/        # 中间件
+│   ├── models/            # 数据模型
+│   └── service/           # 业务逻辑
+├── pkg/                    # 工具包
+└── routers/               # 路由控制器
+    ├── api/               # API模块
+    └── admin/             # Admin模块
+```
+
+## 开发规范
+
+### API开发流程
+1. 在 `routers/api/` 创建控制器
+2. 在 `internal/service/` 创建业务逻辑
+3. 在 `internal/models/` 定义数据模型
+4. 在 `routers/router.go` 注册路由
+5. 测试时使用 `skip-signature: true` 跳过签名验证
+
+### Admin开发流程
+1. 在 `routers/admin/` 创建控制器
+2. 使用 `admin.Auth()` 中间件验证管理员权限
+3. 添加特定权限检查
+4. 记录管理员操作日志
+
+### 统一响应格式
+```go
+appG := app.Gin{C: c}
+appG.Success(data)           // 成功响应
+appG.Error(e.ERROR_CODE)     // 错误响应
+appG.InvalidParams()         // 参数错误
+```
+
+### 错误码体系
+- `200`: 成功
+- `400`: 参数错误  
+- `401`: 签名错误
+- `2xxxx`: 认证相关错误
+- `4xxxx`: 用户相关错误
+- `5xxxx`: 数据库相关错误
+
+## 重要配置
+- **数据库表前缀**: `ay_`
+- **Redis键前缀**: `justus:`
+- **服务端口**: 8787
+- **JWT密钥**: 配置在 `conf/app.dev.yaml`
+
+## 开发注意事项
+1. 遵循 RESTful 规范
+2. Admin接口必须验证管理员权限
+3. 使用统一错误码和响应格式
+4. 重要操作必须记录日志
+5. API模块必须验证请求签名(开发模式可跳过)
+6. 中间件顺序: Logger -> Recover -> BodyLog -> Common -> Sign -> JWT -> Auth
+
+## AI 助手规则
+- 遵循《代码整洁之道》原则
+- 每次修改完代码后不需要写文档、测试文件、示例文件
+- 更新代码后移除原来功能无用的代码
+- 不要创建 .md 文件
+- 使用中文回复
+- 只关注用户的需求
+
+## 快速启动
+- 使用 `make dev` 启动热重载开发环境
+- 使用 `make run` 直接运行应用
+- 使用 `make db-init` 初始化数据库（自动使用配置文件，无需输入密码）
+- 使用 `make help` 查看所有可用命令
+
+## 数据库管理
+- `make db-init` - 智能数据库初始化（推荐）
+- `make migrate` - 仅执行表结构迁移
+- `make seed` - 仅创建种子数据
+
+## 配置说明
+- 默认配置文件: `conf/app.dev.yaml` (开发) / `conf/app.production.yaml` (生产)
+- 环境变量优先级高于配置文件，可通过 `.env` 文件覆盖配置
+- 支持的环境变量: JWT_SECRET, APP_PORT, DB_HOST, DB_USER, DB_PASSWORD, REDIS_HOST 等
+
+## 调试技巧
+- 开发时使用 `skip-signature: true` 头部跳过签名验证
+- 查看 `runtime/logs/` 目录下的日志文件
+- Redis调试使用 `justus:` 前缀查找键值
+- JWT调试可以解码token查看payload
+- 健康检查: `curl http://localhost:8787/health` 

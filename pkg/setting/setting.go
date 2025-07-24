@@ -110,6 +110,23 @@ func Setup() {
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
+	// 设置环境变量映射
+	v.BindEnv("app.JwtSecret", "JWT_SECRET")
+	v.BindEnv("app.PrefixUrl", "APP_PREFIX_URL")
+	v.BindEnv("app.ImageUrl", "APP_IMAGE_URL")
+	v.BindEnv("app.AesKey", "AES_KEY")
+	v.BindEnv("server.RunMode", "APP_RUN_MODE")
+	v.BindEnv("server.HttpPort", "APP_PORT")
+	v.BindEnv("database.User", "DB_USER")
+	v.BindEnv("database.Password", "DB_PASSWORD")
+	v.BindEnv("database.Host", "DB_HOST")
+	v.BindEnv("database.Name", "DB_NAME")
+	v.BindEnv("database.TablePrefix", "DB_TABLE_PREFIX")
+	v.BindEnv("redis.DB", "REDIS_DB")
+	v.BindEnv("redis.Host", "REDIS_HOST")
+	v.BindEnv("redis.Password", "REDIS_PASSWORD")
+	v.BindEnv("redis.Prefix", "REDIS_PREFIX")
+
 	if err := v.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("Fatal error config file: %w", err))
 	}

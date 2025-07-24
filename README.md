@@ -137,7 +137,10 @@ justus-go/
    # 复制环境变量配置文件
    cp .env.example .env
 
-   # 编辑配置文件
+   # 编辑环境变量文件（可选，有默认值）
+   vim .env
+
+   # 或者直接编辑配置文件
    vim conf/app.dev.yaml
    ```
 
@@ -146,11 +149,22 @@ justus-go/
    ```bash
    # 启动MySQL和Redis服务
    # 创建数据库：justus
+
+   # 初始化数据库（推荐，自动使用配置文件连接）
+   make db-init
+
+   # 或者使用SQL文件初始化（需要输入密码）
+   make db-init-sql
    ```
 
 5. **运行项目**
+
    ```bash
-   go run cmd/justus-go.go
+   # 开发模式（热重载）
+   make dev
+
+   # 或者直接运行
+   make run
    ```
 
 服务器将在 `http://localhost:8787` 启动
@@ -258,26 +272,44 @@ adminGroup.GET("/sensitive", admin.RequirePermission("system.write"), handler)
 
 ### 关键配置项
 
+**配置文件方式** (`conf/app.dev.yaml`):
+
 ```yaml
 app:
-  PageSize: 20 # 分页大小
-  JwtSecret: "your-jwt-secret" # JWT密钥
+  PageSize: 20
+  JwtSecret: "your-jwt-secret"
 
 server:
-  RunMode: release # 运行模式 (debug/release)
-  HttpPort: 8787 # 服务端口
+  RunMode: debug
+  HttpPort: 8787
 
 database:
-  Type: mysql
   Host: 127.0.0.1:3306
-  Name: justus # 数据库名
-  User: root # 数据库用户
-  Password: root # 数据库密码
+  Name: justus
+  User: root
+  Password: root
 
 redis:
   Host: 127.0.0.1:6379
-  DB: 1
-  Prefix: "justus:" # Redis键前缀
+  Prefix: "justus:"
+```
+
+**环境变量方式** (`.env`):
+
+```bash
+# 应用配置
+JWT_SECRET=your-super-secret-key
+APP_PORT=8787
+
+# 数据库配置
+DB_HOST=127.0.0.1:3306
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=justus
+
+# Redis配置
+REDIS_HOST=127.0.0.1:6379
+REDIS_PREFIX=justus:
 ```
 
 ## 作为模版使用

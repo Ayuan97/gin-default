@@ -9,37 +9,41 @@ import (
 
 // User 普通用户模型
 type User struct {
-	Uid             int    `json:"uid" gorm:"primaryKey;autoIncrement"`
-	UniqueId        int    `json:"unique_id" gorm:"unique"`
-	Avatar          string `json:"avatar"`
-	FirstName       string `json:"first_name"`
-	LastName        string `json:"last_name"`
-	Lang            string `json:"lang"`
-	OsType          int    `json:"os_type"`
-	Phone           string `json:"phone"`
-	Pin             string `json:"pin"`
-	ComponentNumber int    `json:"component_number"`
-	FriendNumber    int    `json:"friend_number"`
-	Status          int    `json:"status" gorm:"default:1"` // 用户状态 1:正常 0:禁用
-	CreatedAt       string `json:"created_at"`
-	UpdatedAt       string `json:"updated_at"`
+	ID            uint      `json:"id" gorm:"primaryKey;autoIncrement;comment:用户ID，主键"`
+	Username      string    `json:"username" gorm:"uniqueIndex:uk_username;not null;size:50;comment:用户名，唯一标识"`
+	Email         string    `json:"email" gorm:"uniqueIndex:uk_email;size:100;comment:邮箱地址，可选"`
+	Phone         string    `json:"phone" gorm:"size:20;comment:手机号码"`
+	Avatar        string    `json:"avatar" gorm:"size:500;default:'';comment:头像URL地址"`
+	FirstName     string    `json:"first_name" gorm:"size:50;default:'';comment:名字（西方习惯）"`
+	LastName      string    `json:"last_name" gorm:"size:50;default:'';comment:姓氏（西方习惯）"`
+	Nickname      string    `json:"nickname" gorm:"size:50;default:'';comment:昵称"`
+	Gender        int       `json:"gender" gorm:"default:0;comment:性别：0-未知，1-男，2-女"`
+	Birthday      *GormDate `json:"birthday" gorm:"comment:生日"`
+	Lang          string    `json:"lang" gorm:"size:10;default:'zh-Hans';comment:语言偏好：zh-Hans-简体中文，en-英文等"`
+	Timezone      string    `json:"timezone" gorm:"size:50;default:'Asia/Shanghai';comment:时区设置"`
+	Status        int       `json:"status" gorm:"default:1;comment:用户状态：1-正常，0-禁用，2-待激活;index:idx_status"`
+	EmailVerified bool      `json:"email_verified" gorm:"default:false;comment:邮箱验证状态：false-未验证，true-已验证"`
+	PhoneVerified bool      `json:"phone_verified" gorm:"default:false;comment:手机验证状态：false-未验证，true-已验证"`
+	LastLoginAt   *GormTime `json:"last_login_at" gorm:"comment:最后登录时间;index:idx_last_login"`
+	LastLoginIP   string    `json:"last_login_ip" gorm:"size:45;default:'';comment:最后登录IP地址"`
+	LoginCount    int       `json:"login_count" gorm:"default:0;comment:登录次数统计"`
+	CreatedAt     GormTime  `json:"created_at" gorm:"autoCreateTime;comment:创建时间;index:idx_created_at"`
+	UpdatedAt     GormTime  `json:"updated_at" gorm:"autoUpdateTime;comment:更新时间"`
+	DeletedAt     *GormTime `json:"deleted_at" gorm:"index;comment:软删除时间"`
 }
 
 // UserInfo 普通用户信息结构体
 type UserInfo struct {
-	Uid             int    `json:"uid"`
-	UniqueId        int    `json:"unique_id"`
-	Avatar          string `json:"avatar"`
-	FirstName       string `json:"first_name"`
-	LastName        string `json:"last_name"`
-	Lang            string `json:"lang"`
-	Phone           string `json:"phone"`
-	ComponentNumber int    `json:"component_number"`
-	FriendNumber    int    `json:"friend_number"`
-	HotNum          int    `json:"hot_num"`          //热度
-	FollowPhotoNum  int    `json:"follow_photo_num"` //跟拍
-	FansNum         int    `json:"fans_num"`         //粉丝数量
-	Status          int    `json:"status"`           // 用户状态
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
+	Avatar    string `json:"avatar"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	FullName  string `json:"full_name"`
+	Lang      string `json:"lang"`
+	Status    int    `json:"status"` // 用户状态
 }
 
 // 图片地址拼接
@@ -54,30 +58,40 @@ func (u *User) getUrl() string {
 
 // Format 格式化普通用户信息
 func (u *User) Format() *UserInfo {
-	if u.Uid <= 0 {
+	if u.ID <= 0 {
 		return nil
 	}
+
+	fullName := u.FirstName
+	if u.LastName != "" {
+		if fullName != "" {
+			fullName += " " + u.LastName
+		} else {
+			fullName = u.LastName
+		}
+	}
+
 	return &UserInfo{
-		Uid:             u.Uid,
-		UniqueId:        u.UniqueId,
-		Avatar:          u.getUrl(),
-		FirstName:       u.FirstName,
-		LastName:        u.LastName,
-		Lang:            u.Lang,
-		Phone:           u.Phone,
-		ComponentNumber: u.ComponentNumber,
-		FriendNumber:    u.FriendNumber,
-		Status:          u.Status,
+		ID:        int(u.ID),
+		Username:  u.Username,
+		Email:     u.Email,
+		Phone:     u.Phone,
+		Avatar:    u.getUrl(),
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		FullName:  fullName,
+		Lang:      u.Lang,
+		Status:    u.Status,
 	}
 }
 
 // GetUserInfo 获取用户信息
 func (u *User) GetUserInfo() (*User, error) {
 	var user User
-	if u.Uid > 0 {
-		err := db.Where("uid = ?", u.Uid).First(&user).Error
+	if u.ID > 0 {
+		err := db.Where("id = ?", u.ID).First(&user).Error
 		if err != nil {
-			global.Logger.Errorf("GetUserInfo error: %v db: %v", err, db)
+			global.Logger.Errorf("GetUserInfo error: %v", err)
 			return &user, err
 		}
 	} else {
@@ -91,7 +105,7 @@ func (u *User) GetUserInfo() (*User, error) {
 func (u *User) GetUsersByIDs(Ids []int) ([]*User, error) {
 	var users []*User
 	if len(Ids) > 0 {
-		db.Where("uid in (?)", Ids).Find(&users)
+		db.Where("id in (?)", Ids).Find(&users)
 	}
 	return users, nil
 }

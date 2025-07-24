@@ -1,9 +1,9 @@
 app:
   PageSize: 20
-  JwtSecret: M2lTP9APLdRY6TA5RC42rz5AkxsgoAZNdVx1bC2XQXlh2pxEJ5waB5EIKfp4CHfM
-  PrefixUrl: http://127.0.0.1:8787
-  ImageUrl: http://127.0.0.1:8787/uploads
-  AesKey: 65kzw31az4tmo00r
+  JwtSecret: change-this-in-production
+  PrefixUrl: http://localhost:8787
+  ImageUrl: http://localhost:8787/uploads
+  AesKey: change-this-in-production
   RuntimeRootPath: runtime/
   LogSavePath: logs/
   LogSaveName: log
@@ -11,7 +11,7 @@ app:
   TimeFormat: 20060102
 
 server:
-  RunMode: debug
+  RunMode: release
   HttpPort: 8787
   ReadTimeout: 60
   WriteTimeout: 60
@@ -19,11 +19,11 @@ server:
 database:
   Type: mysql
   User: root
-  Password: root
+  Password: your-database-password
   Host: 127.0.0.1:3306
-  Name: justus
+  Name: your-database-name
   TablePrefix: ay_
-  LogLevel: 2
+  LogLevel: 1
   ParseTime: true
   Charset: utf8mb4
 
@@ -34,7 +34,7 @@ redis:
   MaxIdle: 30
   MaxActive: 30
   IdleTimeout: 200
-  Prefix: "justus:"
+  Prefix: "your-app:"
 
 log:
   LogType: logger
