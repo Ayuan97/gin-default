@@ -1,12 +1,15 @@
 package logger
 
 import (
-	"github.com/kenshaw/sdhook"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
 	"justus/internal/global"
 	"justus/pkg/setting"
 	"log"
+	"os"
+
+	"github.com/kenshaw/sdhook"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
@@ -14,13 +17,21 @@ func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 	logger.Formatter = &logrus.JSONFormatter{
 		PrettyPrint: true,
 	}
+
 	switch s.LogType {
 	case setting.LogFileType:
-		logger.Out = &lumberjack.Logger{
+		fileWriter := &lumberjack.Logger{
 			Filename:  s.LogFileSavePath + "/" + s.LogFileName + s.LogFileExt,
 			MaxSize:   600,
 			MaxAge:    10,
 			LocalTime: true,
+		}
+
+		// 在开发环境下同时输出到控制台和文件
+		if setting.ServerSetting.RunMode == "debug" {
+			logger.Out = io.MultiWriter(os.Stdout, fileWriter)
+		} else {
+			logger.Out = fileWriter
 		}
 	case setting.LogFileLogging:
 		hook, err := sdhook.New(
@@ -31,6 +42,9 @@ func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 			logger.Fatal(err)
 		}
 		logger.Hooks.Add(hook)
+	default:
+		// 默认输出到控制台
+		logger.Out = os.Stdout
 	}
 
 	return logger, nil
