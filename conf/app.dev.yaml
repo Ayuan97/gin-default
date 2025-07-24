@@ -37,7 +37,16 @@ redis:
   Prefix: "justus:"
 
 log:
-  LogType: logger
+  # 基础日志配置
+  LogType: file
   LogFileSavePath: storage/logs
   LogFileName: app
   LogFileExt: .log
+
+  # 中间件日志配置
+  MiddlewareLog:
+    Enabled: true # 是否启用中间件日志
+    Level: detailed # 日志级别: basic, detailed, full
+    EnableRequestBody: true # 是否记录请求体
+    EnableResponseBody: true # 是否记录响应体
+    MaxBodySize: 4096 # 最大记录的请求体大小(字节)

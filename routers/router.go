@@ -31,7 +31,7 @@ func InitRouter() *gin.Engine {
 	apiGroup.Use(jwt.JWT())
 	{
 		// 测试接口
-		apiGroup.POST("/test", api.Test)
+		apiGroup.Any("/test", api.Test)
 
 		// 用户相关接口
 		apiGroup.GET("/users", api.GetUsers)          // 获取用户列表

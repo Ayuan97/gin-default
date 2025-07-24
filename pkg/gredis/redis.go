@@ -2,11 +2,12 @@ package gredis
 
 import (
 	"context"
-	"github.com/go-redis/redis/v8"
 	"justus/internal/global"
 	"justus/pkg/setting"
 	"strconv"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 var ctx = context.Background()
@@ -18,10 +19,28 @@ func Setup() {
 		Password: setting.RedisSetting.Password,
 		DB:       setting.RedisSetting.DB,
 	})
+
+	// 测试连接
+	_, err := global.Redis.Ping(ctx).Result()
+	if err != nil {
+		global.Logger.Warnf("Redis连接失败: %v", err)
+	} else {
+		global.Logger.Infof("Redis连接成功: %s", setting.RedisSetting.Host)
+	}
+}
+
+// isRedisAvailable 检查Redis是否可用
+func isRedisAvailable() bool {
+	return global.Redis != nil
 }
 
 // Set a key/value
 func Set(key string, data interface{}, expiration time.Duration) error {
+	if !isRedisAvailable() {
+		global.Logger.Error("Redis未初始化，无法执行Set操作")
+		return redis.Nil
+	}
+
 	key = setting.RedisSetting.Prefix + key
 	err := global.Redis.Set(ctx, key, data, expiration).Err()
 	if err != nil {
@@ -31,8 +50,13 @@ func Set(key string, data interface{}, expiration time.Duration) error {
 	return nil
 }
 
-// Set a key
+// Get a key
 func Get(key string) string {
+	if !isRedisAvailable() {
+		global.Logger.Error("Redis未初始化，无法执行Get操作")
+		return ""
+	}
+
 	key = setting.RedisSetting.Prefix + key
 	val, err := global.Redis.Get(ctx, key).Result()
 	if err != nil {
@@ -41,7 +65,13 @@ func Get(key string) string {
 	}
 	return val
 }
+
 func Del(key string) (res int64, err error) {
+	if !isRedisAvailable() {
+		global.Logger.Error("Redis未初始化，无法执行Del操作")
+		return 0, redis.Nil
+	}
+
 	key = setting.RedisSetting.Prefix + key
 	val, err := global.Redis.Del(ctx, key).Result()
 	if err != nil {
@@ -101,7 +131,7 @@ func Decr(key string) (int64, error) {
 	return val, nil
 }
 
-//无序集合相关
+// 无序集合相关
 func SAdd(key string, members ...interface{}) (res int64, err error) {
 	key = setting.RedisSetting.Prefix + key
 	val, err := global.Redis.SAdd(ctx, key, members).Result()
@@ -201,7 +231,7 @@ func Zrevrange(key string, start int64, end int64) (res []string, err error) {
 	return val, nil
 }
 
-//队列  入队列
+// 队列  入队列
 func LPush(key string, values ...interface{}) (res int64, err error) {
 	key = setting.RedisSetting.Prefix + key
 	result, err := global.Redis.LPush(ctx, key, values).Result()
@@ -213,7 +243,7 @@ func LPush(key string, values ...interface{}) (res int64, err error) {
 
 }
 
-//队列  出队列
+// 队列  出队列
 func RPop(key string) (res string, err error) {
 	key = setting.RedisSetting.Prefix + key
 	result, err := global.Redis.RPop(ctx, key).Result()

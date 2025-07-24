@@ -17,6 +17,24 @@ type LogType string
 const LogFileType LogType = "file"
 const LogFileLogging LogType = "logging"
 
+// MiddlewareLogLevel 中间件日志级别
+type MiddlewareLogLevel string
+
+const (
+	LogLevelBasic    MiddlewareLogLevel = "basic"
+	LogLevelDetailed MiddlewareLogLevel = "detailed"
+	LogLevelFull     MiddlewareLogLevel = "full"
+)
+
+// MiddlewareLogConfig 中间件日志配置
+type MiddlewareLogConfig struct {
+	Enabled            bool               `yaml:"Enabled"`
+	Level              MiddlewareLogLevel `yaml:"Level"`
+	EnableRequestBody  bool               `yaml:"EnableRequestBody"`
+	EnableResponseBody bool               `yaml:"EnableResponseBody"`
+	MaxBodySize        int                `yaml:"MaxBodySize"`
+}
+
 type LoggerSettingS struct {
 	LogType         LogType
 	LogFileSavePath string
@@ -26,6 +44,8 @@ type LoggerSettingS struct {
 	LogZincIndex    string
 	LogZincUser     string
 	LogZincPassword string
+	// 中间件日志配置
+	MiddlewareLog MiddlewareLogConfig `yaml:"MiddlewareLog"`
 }
 
 var LoggerSetting = &LoggerSettingS{}
@@ -92,6 +112,20 @@ type Redis struct {
 var RedisSetting = &Redis{}
 
 var v *viper.Viper
+
+// GetMiddlewareLogConfig 获取中间件日志配置
+func GetMiddlewareLogConfig() *MiddlewareLogConfig {
+	if LoggerSetting == nil {
+		return &MiddlewareLogConfig{
+			Enabled:            false,
+			Level:              LogLevelBasic,
+			EnableRequestBody:  false,
+			EnableResponseBody: false,
+			MaxBodySize:        1024,
+		}
+	}
+	return &LoggerSetting.MiddlewareLog
+}
 
 // Setup initialize the configuration instance
 func Setup() {

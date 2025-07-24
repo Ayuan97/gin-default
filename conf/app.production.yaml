@@ -1,9 +1,9 @@
 app:
   PageSize: 20
-  JwtSecret: change-this-in-production
-  PrefixUrl: http://localhost:8787
-  ImageUrl: http://localhost:8787/uploads
-  AesKey: change-this-in-production
+  JwtSecret: M2lTP9APLdRY6TA5RC42rz5AkxsgoAZNdVx1bC2XQXlh2pxEJ5waB5EIKfp4CHfM
+  PrefixUrl: http://127.0.0.1:8787
+  ImageUrl: http://127.0.0.1:8787/uploads
+  AesKey: 65kzw31az4tmo00r
   RuntimeRootPath: runtime/
   LogSavePath: logs/
   LogSaveName: log
@@ -19,9 +19,9 @@ server:
 database:
   Type: mysql
   User: root
-  Password: your-database-password
+  Password: root
   Host: 127.0.0.1:3306
-  Name: your-database-name
+  Name: justus
   TablePrefix: ay_
   LogLevel: 1
   ParseTime: true
@@ -34,10 +34,19 @@ redis:
   MaxIdle: 30
   MaxActive: 30
   IdleTimeout: 200
-  Prefix: "your-app:"
+  Prefix: "justus:"
 
 log:
-  LogType: logger
+  # 基础日志配置
+  LogType: file
   LogFileSavePath: storage/logs
   LogFileName: app
   LogFileExt: .log
+
+  # 中间件日志配置
+  MiddlewareLog:
+    Enabled: true # 是否启用中间件日志
+    Level: basic # 日志级别: basic, detailed, full
+    EnableRequestBody: false # 是否记录请求体
+    EnableResponseBody: false # 是否记录响应体
+    MaxBodySize: 1024 # 最大记录的请求体大小(字节)

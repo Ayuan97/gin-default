@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"justus/internal/models"
+	"justus/pkg/gredis"
 	"justus/pkg/logger"
 	"justus/pkg/setting"
 	"justus/routers"
@@ -12,6 +13,7 @@ import (
 func init() {
 	setting.Setup()
 	logger.Setup()
+	gredis.Setup()
 	models.Setup()
 }
 
