@@ -116,6 +116,18 @@ func outputRequestLog(c *gin.Context, blw *bodyLogWriter, requestBody string, du
 	// 记录请求头
 	headers := make(map[string]string)
 	for k, v := range c.Request.Header {
+		// 跳过常见的标准HTTP头部和无关参数
+		switch k {
+		case "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control",
+			"Connection", "Cookie", "Host", "Pragma", "Referer",
+			"User-Agent", "Content-Type", "Content-Length", "Origin",
+			"Sec-Fetch-Site", "Sec-Fetch-Mode", "Sec-Fetch-Dest",
+			"X-Requested-With", "X-Real-IP", "X-Forwarded-For",
+			"If-None-Match", "If-Modified-Since", "DNT", "Keep-Alive",
+			"Sec-Ch-Ua", "Sec-Ch-Ua-Mobile", "Sec-Ch-Ua-Platform",
+			"Sec-Fetch-User", "Upgrade-Insecure-Requests":
+			continue
+		}
 		if len(v) > 0 {
 			headers[k] = v[0]
 		}

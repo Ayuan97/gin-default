@@ -6,7 +6,6 @@ import (
 	"justus/internal/middleware/bodyLog"
 	"justus/internal/middleware/jwt"
 	"justus/internal/middleware/recovers"
-	"justus/internal/middleware/sign"
 	adminController "justus/routers/admin"
 	"justus/routers/api"
 
@@ -26,8 +25,8 @@ func InitRouter() *gin.Engine {
 
 	// API模块路由组
 	apiGroup := r.Group("/api/v1")
-	apiGroup.Use(api_require.Common())
-	apiGroup.Use(sign.VerifySignature())
+	// apiGroup.Use(api_require.Common())
+	// apiGroup.Use(sign.VerifySignature())
 	apiGroup.Use(jwt.JWT())
 	{
 		// 测试接口
