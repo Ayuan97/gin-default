@@ -16,6 +16,7 @@ type LogType string
 
 const LogFileType LogType = "file"
 const LogFileLogging LogType = "logging"
+const LogFileSLS LogType = "sls"
 
 // MiddlewareLogLevel 中间件日志级别
 type MiddlewareLogLevel string
@@ -35,6 +36,15 @@ type MiddlewareLogConfig struct {
 	MaxBodySize        int                `yaml:"MaxBodySize"`
 }
 
+// SLSConfig 阿里云SLS配置
+type SLSConfig struct {
+	AccessKeyID     string `yaml:"AccessKeyID"`
+	AccessKeySecret string `yaml:"AccessKeySecret"`
+	Endpoint        string `yaml:"Endpoint"`
+	Project         string `yaml:"Project"`
+	Logstore        string `yaml:"Logstore"`
+}
+
 type LoggerSettingS struct {
 	LogType         LogType
 	LogFileSavePath string
@@ -44,6 +54,8 @@ type LoggerSettingS struct {
 	LogZincIndex    string
 	LogZincUser     string
 	LogZincPassword string
+	// 阿里云SLS配置
+	SLS SLSConfig `yaml:"SLS"`
 	// 中间件日志配置
 	MiddlewareLog MiddlewareLogConfig `yaml:"MiddlewareLog"`
 }
@@ -160,6 +172,12 @@ func Setup() {
 	v.BindEnv("redis.Host", "REDIS_HOST")
 	v.BindEnv("redis.Password", "REDIS_PASSWORD")
 	v.BindEnv("redis.Prefix", "REDIS_PREFIX")
+	// SLS 环境变量绑定
+	v.BindEnv("log.SLS.AccessKeyID", "SLS_ACCESS_KEY_ID")
+	v.BindEnv("log.SLS.AccessKeySecret", "SLS_ACCESS_KEY_SECRET")
+	v.BindEnv("log.SLS.Endpoint", "SLS_ENDPOINT")
+	v.BindEnv("log.SLS.Project", "SLS_PROJECT")
+	v.BindEnv("log.SLS.Logstore", "SLS_LOGSTORE")
 
 	if err := v.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("Fatal error config file: %w", err))

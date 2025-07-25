@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/kenshaw/sdhook"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -29,15 +28,18 @@ func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 
 		logger.Out = io.MultiWriter(os.Stdout, fileWriter)
 
-	case setting.LogFileLogging:
-		hook, err := sdhook.New(
-			sdhook.GoogleServiceAccountCredentialsFile("google-tactile-alloy-283608.json"),
-			sdhook.LogName("justus.api.production"),
-		)
+	case setting.LogFileSLS:
+		// 阿里云SLS日志服务
+		slsHook, err := NewSLSHook(&s.SLS)
 		if err != nil {
-			logger.Fatal(err)
+			return nil, err
 		}
-		logger.Hooks.Add(hook)
+
+		logger.Hooks.Add(slsHook)
+
+		// 同时输出到控制台
+		logger.Out = os.Stdout
+
 	default:
 		// 默认输出到控制台
 		logger.Out = os.Stdout
@@ -53,6 +55,7 @@ func Setup() {
 		log.Fatalf("init.setupLogger err: %v", err)
 	}
 }
+
 func setupLogger() error {
 	logger, err := New(setting.LoggerSetting)
 	if err != nil {

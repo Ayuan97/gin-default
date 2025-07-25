@@ -43,6 +43,14 @@ log:
   LogFileName: app
   LogFileExt: .log
 
+  # 阿里云 SLS 配置
+  SLS:
+    AccessKeyID:
+    AccessKeySecret:
+    Endpoint: cn-hangzhou.log.aliyuncs.com
+    Project: justus-logs
+    Logstore: app-logs
+
   # 中间件日志配置
   MiddlewareLog:
     Enabled: true # 是否启用中间件日志
