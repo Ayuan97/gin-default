@@ -50,7 +50,7 @@ func (c *Client) IndexDocuments(index string, docs []map[string]interface{}) (*B
 		Records: docs,
 	}
 
-	endpoint := fmt.Sprintf("/api/%s/_bulk", index)
+	endpoint := "/api/_bulkv2"
 	resp, err := c.makeRequest("POST", endpoint, req)
 	if err != nil {
 		return nil, fmt.Errorf("index documents: %w", err)

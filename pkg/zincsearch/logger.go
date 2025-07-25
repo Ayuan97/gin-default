@@ -57,8 +57,14 @@ func (hook *ZincHook) Fire(entry *logrus.Entry) error {
 
 	// 添加字段
 	for key, value := range entry.Data {
+		if key == "response_body" {
+			continue
+		}
 		logEntry[key] = value
 	}
+	logEntry["response_body"] = entry.Data["response_body"]
+	logEntry["query"] = entry.Data["query"]
+	logEntry["request_body"] = entry.Data["request_body"]
 
 	// 添加到缓冲区
 	hook.buffer = append(hook.buffer, logEntry)
@@ -147,30 +153,4 @@ type LogEntry struct {
 	Message   string                 `json:"message"`
 	Logger    string                 `json:"logger"`
 	Fields    map[string]interface{} `json:"fields,omitempty"`
-}
-
-// LogToZinc 直接记录日志到 ZincSearch
-func LogToZinc(client *Client, index, level, message string, fields map[string]interface{}) error {
-	entry := LogEntry{
-		Timestamp: time.Now(),
-		Level:     level,
-		Message:   message,
-		Logger:    "justus-go",
-		Fields:    fields,
-	}
-
-	doc := map[string]interface{}{
-		"@timestamp": entry.Timestamp.Format(time.RFC3339),
-		"level":      entry.Level,
-		"message":    entry.Message,
-		"logger":     entry.Logger,
-	}
-
-	// 添加额外字段
-	for key, value := range entry.Fields {
-		doc[key] = value
-	}
-
-	_, err := client.IndexDocument(index, doc)
-	return err
 }

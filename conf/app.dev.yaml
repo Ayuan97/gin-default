@@ -40,13 +40,13 @@ redis:
 zincsearch:
   Host: http://127.0.0.1:4080
   Username: admin
-  Password: admin
+  Password: Complexpass#123
   Timeout: 30
   DefaultIndex: justus_logs
 
 log:
   # 基础日志配置
-  LogType: sls
+  LogType: zinc
   LogFileSavePath: storage/logs
   LogFileName: app
   LogFileExt: .log
