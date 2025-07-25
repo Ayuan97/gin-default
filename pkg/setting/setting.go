@@ -17,6 +17,7 @@ type LogType string
 const LogFileType LogType = "file"
 const LogFileLogging LogType = "logging"
 const LogFileSLS LogType = "sls"
+const LogFileZinc LogType = "zinc"
 
 // MiddlewareLogLevel 中间件日志级别
 type MiddlewareLogLevel string
@@ -45,6 +46,15 @@ type SLSConfig struct {
 	Logstore        string `yaml:"Logstore"`
 }
 
+// ZincSearchConfig ZincSearch配置
+type ZincSearchConfig struct {
+	Host         string `yaml:"Host"`
+	Username     string `yaml:"Username"`
+	Password     string `yaml:"Password"`
+	Timeout      int    `yaml:"Timeout"`
+	DefaultIndex string `yaml:"DefaultIndex"`
+}
+
 type LoggerSettingS struct {
 	LogType         LogType
 	LogFileSavePath string
@@ -61,6 +71,8 @@ type LoggerSettingS struct {
 }
 
 var LoggerSetting = &LoggerSettingS{}
+
+var ZincSearchSetting = &ZincSearchConfig{}
 
 type App struct {
 	AesKey    string
@@ -179,6 +191,13 @@ func Setup() {
 	v.BindEnv("log.SLS.Project", "SLS_PROJECT")
 	v.BindEnv("log.SLS.Logstore", "SLS_LOGSTORE")
 
+	// ZincSearch 环境变量绑定
+	v.BindEnv("zincsearch.Host", "ZINC_HOST")
+	v.BindEnv("zincsearch.Username", "ZINC_USERNAME")
+	v.BindEnv("zincsearch.Password", "ZINC_PASSWORD")
+	v.BindEnv("zincsearch.Timeout", "ZINC_TIMEOUT")
+	v.BindEnv("zincsearch.DefaultIndex", "ZINC_DEFAULT_INDEX")
+
 	if err := v.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("Fatal error config file: %w", err))
 	}
@@ -197,6 +216,9 @@ func Setup() {
 	}
 	if err := v.UnmarshalKey("log", LoggerSetting); err != nil {
 		panic(fmt.Errorf("Unmarshal log config error: %w", err))
+	}
+	if err := v.UnmarshalKey("zincsearch", ZincSearchSetting); err != nil {
+		panic(fmt.Errorf("Unmarshal zincsearch config error: %w", err))
 	}
 
 	AppSetting.ImageMaxSize = AppSetting.ImageMaxSize * 1024 * 1024

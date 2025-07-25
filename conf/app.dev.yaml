@@ -36,12 +36,26 @@ redis:
   IdleTimeout: 200
   Prefix: "justus:"
 
+# ZincSearch 配置
+zincsearch:
+  Host: http://127.0.0.1:4080
+  Username: admin
+  Password: admin
+  Timeout: 30
+  DefaultIndex: justus_logs
+
 log:
   # 基础日志配置
   LogType: sls
   LogFileSavePath: storage/logs
   LogFileName: app
   LogFileExt: .log
+
+  # ZincSearch 日志配置
+  LogZincHost: http://127.0.0.1:4080
+  LogZincUser: admin
+  LogZincPassword: admin
+  LogZincIndex: justus_logs
 
   # 阿里云 SLS 配置
   SLS:

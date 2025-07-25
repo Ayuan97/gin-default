@@ -40,6 +40,18 @@ func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 		// 同时输出到控制台
 		logger.Out = os.Stdout
 
+	case setting.LogFileZinc:
+		// ZincSearch 日志服务
+		zincHook, err := NewZincHook(s)
+		if err != nil {
+			return nil, err
+		}
+
+		logger.Hooks.Add(zincHook)
+
+		// 同时输出到控制台
+		logger.Out = os.Stdout
+
 	default:
 		// 默认输出到控制台
 		logger.Out = os.Stdout
