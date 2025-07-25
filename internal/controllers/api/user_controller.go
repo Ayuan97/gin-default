@@ -3,13 +3,29 @@ package api
 import (
 	"strconv"
 
+	"justus/internal/container"
 	"justus/internal/models"
-	"justus/internal/service"
 	"justus/pkg/app"
 	"justus/pkg/e"
 
 	"github.com/gin-gonic/gin"
 )
+
+// UserController 用户控制器
+type UserController struct {
+	userService container.UserService
+	logger      container.Logger
+	cache       container.Cache
+}
+
+// NewUserController 创建用户控制器实例
+func NewUserController(userService container.UserService, logger container.Logger, cache container.Cache) *UserController {
+	return &UserController{
+		userService: userService,
+		logger:      logger,
+		cache:       cache,
+	}
+}
 
 type UserRequest struct {
 	FirstName string `json:"first_name" binding:"required"`
@@ -20,7 +36,7 @@ type UserRequest struct {
 }
 
 // GetUser 获取用户信息
-func GetUser(c *gin.Context) {
+func (uc *UserController) GetUser(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	idStr := c.Param("id")
@@ -30,8 +46,7 @@ func GetUser(c *gin.Context) {
 		return
 	}
 
-	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(id)
+	user, err := uc.userService.GetUserInfo(id)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
@@ -43,7 +58,7 @@ func GetUser(c *gin.Context) {
 }
 
 // GetUsers 获取普通用户列表
-func GetUsers(c *gin.Context) {
+func (uc *UserController) GetUsers(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	// 分页参数
@@ -66,7 +81,7 @@ func GetUsers(c *gin.Context) {
 	status := c.Query("status")
 
 	// 获取普通用户列表
-	users, total, err := models.GetUsers(page, limit, keyword, status)
+	users, total, err := uc.userService.GetUsers(page, limit, keyword, status)
 	if err != nil {
 		appG.Error(e.ERROR_DATABASE_QUERY)
 		return
@@ -93,7 +108,7 @@ func GetUsers(c *gin.Context) {
 }
 
 // CreateUser 创建普通用户
-func CreateUser(c *gin.Context) {
+func (uc *UserController) CreateUser(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	var req UserRequest
@@ -112,7 +127,7 @@ func CreateUser(c *gin.Context) {
 		Status:    1, // 默认正常状态
 	}
 
-	err := user.CreateUser()
+	err := uc.userService.CreateUser(user)
 	if err != nil {
 		appG.Error(e.ERROR_DATABASE_INSERT)
 		return
@@ -125,7 +140,7 @@ func CreateUser(c *gin.Context) {
 }
 
 // UpdateUser 更新用户信息
-func UpdateUser(c *gin.Context) {
+func (uc *UserController) UpdateUser(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	idStr := c.Param("id")
@@ -142,8 +157,7 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	// 检查用户是否存在
-	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(id)
+	user, err := uc.userService.GetUserInfo(id)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
@@ -156,7 +170,7 @@ func UpdateUser(c *gin.Context) {
 	user.Lang = req.Lang
 	user.Avatar = req.Avatar
 
-	err = user.UpdateUser()
+	err = uc.userService.UpdateUser(user)
 	if err != nil {
 		appG.Error(e.ERROR_DATABASE_UPDATE)
 		return
@@ -169,7 +183,7 @@ func UpdateUser(c *gin.Context) {
 }
 
 // DeleteUser 删除用户
-func DeleteUser(c *gin.Context) {
+func (uc *UserController) DeleteUser(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	idStr := c.Param("id")
@@ -180,14 +194,13 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	// 检查用户是否存在
-	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(id)
+	_, err = uc.userService.GetUserInfo(id)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
 	}
 
-	err = user.DeleteUser()
+	err = uc.userService.DeleteUser(id)
 	if err != nil {
 		appG.Error(e.ERROR_DATABASE_DELETE)
 		return
@@ -200,7 +213,7 @@ func DeleteUser(c *gin.Context) {
 }
 
 // GetProfile 获取当前用户个人信息
-func GetProfile(c *gin.Context) {
+func (uc *UserController) GetProfile(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	// 从JWT中获取用户ID
@@ -211,8 +224,7 @@ func GetProfile(c *gin.Context) {
 	}
 
 	uid := userId.(int)
-	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(uid)
+	user, err := uc.userService.GetUserInfo(uid)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
@@ -224,7 +236,7 @@ func GetProfile(c *gin.Context) {
 }
 
 // UpdateProfile 更新当前用户个人信息
-func UpdateProfile(c *gin.Context) {
+func (uc *UserController) UpdateProfile(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	// 从JWT中获取用户ID
@@ -243,8 +255,7 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	// 检查用户是否存在
-	userService := &service.UserService{}
-	user, err := userService.GetUserInfo(uid)
+	user, err := uc.userService.GetUserInfo(uid)
 	if err != nil {
 		appG.Error(e.ERROR_USER_NOT_FOUND)
 		return
@@ -257,7 +268,7 @@ func UpdateProfile(c *gin.Context) {
 	user.Lang = req.Lang
 	user.Avatar = req.Avatar
 
-	err = user.UpdateUser()
+	err = uc.userService.UpdateUser(user)
 	if err != nil {
 		appG.Error(e.ERROR_DATABASE_UPDATE)
 		return
