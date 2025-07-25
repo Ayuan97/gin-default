@@ -15,7 +15,7 @@ import (
 func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 	logger := logrus.New()
 	logger.Formatter = &logrus.JSONFormatter{
-		PrettyPrint: true,
+		PrettyPrint: false,
 	}
 
 	switch s.LogType {
@@ -27,12 +27,8 @@ func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 			LocalTime: true,
 		}
 
-		// 在开发环境下同时输出到控制台和文件
-		if setting.ServerSetting.RunMode == "debug" {
-			logger.Out = io.MultiWriter(os.Stdout, fileWriter)
-		} else {
-			logger.Out = fileWriter
-		}
+		logger.Out = io.MultiWriter(os.Stdout, fileWriter)
+
 	case setting.LogFileLogging:
 		hook, err := sdhook.New(
 			sdhook.GoogleServiceAccountCredentialsFile("google-tactile-alloy-283608.json"),

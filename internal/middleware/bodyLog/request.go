@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net/url"
 	"time"
 
 	"justus/internal/global"
@@ -92,8 +93,10 @@ func outputRequestLog(c *gin.Context, blw *bodyLogWriter, requestBody string, du
 		return
 	}
 
-	// 构建基础日志字段
-	fields := logrus.Fields{
+	// 构建完整的请求日志结构
+	logData := map[string]interface{}{
+		"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
+		"level":       getLogLevel(c.Writer.Status()),
 		"method":      c.Request.Method,
 		"path":        c.Request.URL.Path,
 		"status_code": c.Writer.Status(),
@@ -104,16 +107,16 @@ func outputRequestLog(c *gin.Context, blw *bodyLogWriter, requestBody string, du
 	// 添加用户信息（如果有）
 	if userID, exists := c.Get("userId"); exists {
 		if uid, ok := userID.(int); ok && uid > 0 {
-			fields["user_id"] = uid
+			logData["user_id"] = uid
 		}
 	}
 	if username, exists := c.Get("username"); exists {
 		if name, ok := username.(string); ok && name != "" {
-			fields["username"] = name
+			logData["username"] = name
 		}
 	}
 
-	// 记录请求头
+	// 记录请求头（只记录自定义头部）
 	headers := make(map[string]string)
 	for k, v := range c.Request.Header {
 		// 跳过常见的标准HTTP头部和无关参数
@@ -132,47 +135,72 @@ func outputRequestLog(c *gin.Context, blw *bodyLogWriter, requestBody string, du
 			headers[k] = v[0]
 		}
 	}
-	fields["headers"] = headers
+	if len(headers) > 0 {
+		logData["headers"] = headers
+	}
 
-	// 记录查询参数
+	// 记录查询参数 - 解析为JSON对象
 	if len(c.Request.URL.RawQuery) > 0 {
-		fields["query"] = c.Request.URL.RawQuery
+		if queryParams, err := url.ParseQuery(c.Request.URL.RawQuery); err == nil {
+			queryMap := make(map[string]string)
+			for k, v := range queryParams {
+				if len(v) > 0 {
+					queryMap[k] = v[0]
+				}
+			}
+			logData["query"] = queryMap
+		} else {
+			logData["query"] = c.Request.URL.RawQuery
+		}
 	}
 
-	// 记录请求体
+	// 记录请求体 - 解析为JSON对象
 	if requestBody != "" {
-		// 尝试解析为JSON
-		var jsonBody interface{}
-		if err := json.Unmarshal([]byte(requestBody), &jsonBody); err == nil {
-			fields["request_body"] = jsonBody
+		var parsedBody interface{}
+		// 首先尝试解析为JSON
+		if err := json.Unmarshal([]byte(requestBody), &parsedBody); err == nil {
+			logData["request_body"] = parsedBody
 		} else {
-			fields["request_body"] = requestBody
+			// JSON解析失败，尝试解析为表单数据
+			if formData, err := url.ParseQuery(requestBody); err == nil {
+				formMap := make(map[string]string)
+				for k, v := range formData {
+					if len(v) > 0 {
+						formMap[k] = v[0]
+					}
+				}
+				logData["request_body"] = formMap
+			} else {
+				logData["request_body"] = requestBody
+			}
 		}
 	}
 
-	// 记录响应体
+	// 记录响应体 - 解析为JSON对象
 	if blw.body.Len() > 0 {
-		responseBody := blw.body.String()
-		// 尝试解析为JSON
-		var jsonResponse interface{}
-		if err := json.Unmarshal(blw.body.Bytes(), &jsonResponse); err == nil {
-			fields["response_body"] = jsonResponse
+		var parsedResponse interface{}
+		if err := json.Unmarshal(blw.body.Bytes(), &parsedResponse); err == nil {
+			logData["response_body"] = parsedResponse
 		} else {
-			fields["response_body"] = responseBody
+			logData["response_body"] = blw.body.String()
 		}
 	}
 
-	// 根据状态码决定日志级别
-	var logLevel logrus.Level
-	switch {
-	case c.Writer.Status() >= 500:
-		logLevel = logrus.ErrorLevel
-	case c.Writer.Status() >= 400:
-		logLevel = logrus.WarnLevel
-	default:
-		logLevel = logrus.InfoLevel
-	}
+	// 根据状态码决定日志级别并输出JSON格式日志
+	logLevel := getLogLevel(c.Writer.Status())
 
-	// 输出完整的结构化日志
-	global.Logger.WithFields(fields).Log(logLevel, "HTTP Request")
+	// 输出标准JSON格式日志
+	global.Logger.WithFields(logrus.Fields(logData)).Log(logLevel, "HTTP Request")
+}
+
+// getLogLevel 根据HTTP状态码获取日志级别
+func getLogLevel(statusCode int) logrus.Level {
+	switch {
+	case statusCode >= 500:
+		return logrus.ErrorLevel
+	case statusCode >= 400:
+		return logrus.WarnLevel
+	default:
+		return logrus.InfoLevel
+	}
 }
