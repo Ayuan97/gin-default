@@ -60,10 +60,6 @@ type LoggerSettingS struct {
 	LogFileSavePath string
 	LogFileName     string
 	LogFileExt      string
-	LogZincHost     string
-	LogZincIndex    string
-	LogZincUser     string
-	LogZincPassword string
 	// 阿里云SLS配置
 	SLS SLSConfig `yaml:"SLS"`
 	// 中间件日志配置

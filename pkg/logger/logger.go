@@ -42,7 +42,7 @@ func New(s *setting.LoggerSettingS) (*logrus.Logger, error) {
 
 	case setting.LogFileZinc:
 		// ZincSearch 日志服务
-		zincHook, err := NewZincHook(s)
+		zincHook, err := NewZincHook()
 		if err != nil {
 			return nil, err
 		}

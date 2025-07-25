@@ -6,13 +6,16 @@ import (
 )
 
 // NewZincHook 创建 ZincSearch 日志钩子
-func NewZincHook(s *setting.LoggerSettingS) (*zincsearch.ZincHook, error) {
+func NewZincHook() (*zincsearch.ZincHook, error) {
+	// 使用统一的 ZincSearch 配置
+	config := setting.ZincSearchSetting
+
 	// 创建 ZincSearch 客户端
 	client := zincsearch.NewCustomClient(
-		s.LogZincHost,
-		s.LogZincUser,
-		s.LogZincPassword,
-		30, // 默认30秒超时
+		config.Host,
+		config.Username,
+		config.Password,
+		config.Timeout,
 	)
 
 	// 检查连接
@@ -20,8 +23,8 @@ func NewZincHook(s *setting.LoggerSettingS) (*zincsearch.ZincHook, error) {
 		return nil, err
 	}
 
-	// 创建钩子
-	hook := zincsearch.NewZincHook(client, s.LogZincIndex)
+	// 创建钩子，使用默认索引
+	hook := zincsearch.NewZincHook(client, config.DefaultIndex)
 
 	return hook, nil
 }

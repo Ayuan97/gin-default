@@ -36,6 +36,14 @@ redis:
   IdleTimeout: 200
   Prefix: "justus:"
 
+# ZincSearch 配置
+zincsearch:
+  Host: http://127.0.0.1:4080
+  Username: admin
+  Password: admin
+  Timeout: 30
+  DefaultIndex: justus_logs
+
 log:
   # 基础日志配置
   LogType: file
