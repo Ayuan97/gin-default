@@ -45,7 +45,7 @@ zincsearch:
   DefaultIndex: justus_logs
 
 log:
-  # 基础日志配置
+  # 基础日志配置 zinc/file/SLS
   LogType: zinc
   LogFileSavePath: storage/logs
   LogFileName: app
