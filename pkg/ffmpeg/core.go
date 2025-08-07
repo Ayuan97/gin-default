@@ -10,11 +10,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
 // FFmpeg 主要的FFmpeg操作接口
 type FFmpeg struct {
+	mu       sync.RWMutex  // 读写互斥锁
 	execPath string        // FFmpeg可执行文件路径
 	timeout  time.Duration // 命令执行超时时间
 	logger   Logger        // 日志记录器
@@ -27,19 +29,22 @@ type Logger interface {
 	Debug(msg string, args ...interface{})
 }
 
-// defaultLogger 默认日志记录器实现
-type defaultLogger struct{}
+// DefaultLogger 默认日志记录器实现
+type DefaultLogger struct{}
 
-func (l *defaultLogger) Info(msg string, args ...interface{}) {
-	fmt.Printf("[INFO] "+msg+"\n", args...)
+// Info 记录信息日志
+func (l *DefaultLogger) Info(msg string, args ...interface{}) {
+	fmt.Printf("[INFO] [FFmpeg] "+msg+"\n", args...)
 }
 
-func (l *defaultLogger) Error(msg string, args ...interface{}) {
-	fmt.Printf("[ERROR] "+msg+"\n", args...)
+// Error 记录错误日志
+func (l *DefaultLogger) Error(msg string, args ...interface{}) {
+	fmt.Printf("[ERROR] [FFmpeg] "+msg+"\n", args...)
 }
 
-func (l *defaultLogger) Debug(msg string, args ...interface{}) {
-	fmt.Printf("[DEBUG] "+msg+"\n", args...)
+// Debug 记录调试日志
+func (l *DefaultLogger) Debug(msg string, args ...interface{}) {
+	fmt.Printf("[DEBUG] [FFmpeg] "+msg+"\n", args...)
 }
 
 // Config FFmpeg配置选项
@@ -49,20 +54,23 @@ type Config struct {
 	Logger     Logger        // 日志记录器，为空时使用默认记录器
 }
 
+// 配置常量
+const (
+	DefaultTimeout = 30 * 60 // 30 minutes in seconds
+)
+
 // New 创建新的FFmpeg实例
 func New(config *Config) (*FFmpeg, error) {
 	if config == nil {
 		config = &Config{}
 	}
 
-	// 设置默认超时时间
+	// 设置默认值
 	if config.Timeout == 0 {
-		config.Timeout = 30 * time.Minute
+		config.Timeout = DefaultTimeout * time.Second
 	}
-
-	// 设置默认日志记录器
 	if config.Logger == nil {
-		config.Logger = &defaultLogger{}
+		config.Logger = &DefaultLogger{}
 	}
 
 	// 检测FFmpeg可执行文件路径
@@ -165,24 +173,53 @@ func validateFFmpegPath(path string) error {
 
 // executeCommand 执行FFmpeg命令
 func (f *FFmpeg) executeCommand(ctx context.Context, args []string) ([]byte, error) {
-	f.logger.Debug("执行FFmpeg命令: %s %s", f.execPath, strings.Join(args, " "))
+	f.mu.RLock()
+	execPath := f.execPath
+	timeout := f.timeout
+	logger := f.logger
+	f.mu.RUnlock()
+
+	logger.Debug("执行FFmpeg命令: %s %s", execPath, strings.Join(args, " "))
 
 	// 创建带超时的上下文
 	if ctx == nil {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), f.timeout)
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 	}
 
 	// 执行命令
-	cmd := exec.CommandContext(ctx, f.execPath, args...)
+	cmd := exec.CommandContext(ctx, execPath, args...)
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-		f.logger.Error("FFmpeg命令执行失败: %s, 输出: %s", err.Error(), string(output))
+		logger.Error("FFmpeg命令执行失败: %s, 输出: %s", err.Error(), string(output))
 		return output, fmt.Errorf("FFmpeg命令执行失败: %w", err)
 	}
 
-	f.logger.Debug("FFmpeg命令执行成功")
+	logger.Debug("FFmpeg命令执行成功")
 	return output, nil
+}
+
+// GetExecPath 获取FFmpeg可执行文件路径
+func (f *FFmpeg) GetExecPath() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return f.execPath
+}
+
+// SetTimeout 设置超时时间
+func (f *FFmpeg) SetTimeout(timeout time.Duration) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.timeout = timeout
+}
+
+// QuickValidate 快速验证FFmpeg是否可用
+func (f *FFmpeg) QuickValidate() error {
+	f.mu.RLock()
+	execPath := f.execPath
+	f.mu.RUnlock()
+
+	return validateFFmpegPath(execPath)
 }

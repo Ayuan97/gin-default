@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -83,6 +84,182 @@ type ScreenshotOptions struct {
 
 // ProgressCallback 进度回调函数类型
 type ProgressCallback func(progress float64, currentTime time.Duration, totalTime time.Duration)
+
+// CancelFunc 取消操作函数类型
+type CancelFunc func()
+
+// VideoEditOperation 视频编辑操作接口
+type VideoEditOperation interface {
+	Execute(ctx context.Context, ffmpeg *FFmpeg) error
+	GetDescription() string
+	EstimateDuration() time.Duration
+}
+
+// Timeline 时间轴结构，用于管理多媒体素材的时间安排
+type Timeline struct {
+	Duration time.Duration                 // 总时长
+	Tracks   map[string][]*TimelineElement // 轨道映射（video, audio, overlay等）
+}
+
+// TimelineElement 时间轴元素
+type TimelineElement struct {
+	StartTime time.Duration // 开始时间
+	Duration  time.Duration // 持续时间
+	Source    string        // 源文件路径
+	Type      ElementType   // 元素类型
+	Options   interface{}   // 特定选项
+}
+
+// ElementType 元素类型
+type ElementType string
+
+const (
+	ElementTypeVideo     ElementType = "video"     // 视频元素
+	ElementTypeAudio     ElementType = "audio"     // 音频元素
+	ElementTypeImage     ElementType = "image"     // 图片元素
+	ElementTypeWatermark ElementType = "watermark" // 水印元素
+	ElementTypeText      ElementType = "text"      // 文字元素
+)
+
+// CropDimensions 裁剪尺寸选项
+type CropDimensions struct {
+	X      int // 裁剪起始X坐标
+	Y      int // 裁剪起始Y坐标
+	Width  int // 裁剪宽度
+	Height int // 裁剪高度
+}
+
+// WatermarkOptions 水印选项
+type WatermarkOptions struct {
+	ImagePath string  // 水印图片路径
+	X         int     // X坐标位置
+	Y         int     // Y坐标位置
+	Scale     float64 // 缩放比例 (0.1-1.0)
+	Opacity   float64 // 透明度 (0.0-1.0)
+}
+
+// AudioMixOptions 音频混合选项
+type AudioMixOptions struct {
+	BackgroundPath string  // 背景音频路径
+	Volume         float64 // 音量调节 (0.0-2.0)
+	FadeIn         string  // 淡入时间
+	FadeOut        string  // 淡出时间
+	Loop           bool    // 是否循环
+}
+
+// FrameOperation 帧操作类型
+type FrameOperation string
+
+const (
+	FrameInsert  FrameOperation = "insert"  // 插入帧
+	FrameDelete  FrameOperation = "delete"  // 删除帧
+	FrameReplace FrameOperation = "replace" // 替换帧
+)
+
+// FrameEditOptions 帧编辑选项
+type FrameEditOptions struct {
+	Operation   FrameOperation // 操作类型
+	FrameNumber int            // 帧号
+	ImagePath   string         // 图片路径（用于插入或替换）
+	Count       int            // 操作帧数
+}
+
+// SubtitleStyle 字幕样式
+type SubtitleStyle struct {
+	FontSize   int    // 字体大小
+	FontColor  string // 字体颜色
+	FontFamily string // 字体族
+	Position   string // 位置 ("bottom", "top", "center")
+	Alignment  string // 对齐方式 ("left", "center", "right")
+	Outline    int    // 描边宽度
+	Shadow     int    // 阴影偏移
+	MarginV    int    // 垂直边距
+	MarginL    int    // 左边距
+	MarginR    int    // 右边距
+}
+
+// MultiTrackComposer 多轨道合成器配置
+type MultiTrackComposer struct {
+	VideoTracks   []*VideoTrack   // 视频轨道
+	AudioTracks   []*AudioTrack   // 音频轨道
+	ImageTracks   []*ImageTrack   // 图片轨道
+	TextTracks    []*TextTrack    // 文字轨道
+	OverlayTracks []*OverlayTrack // 叠加轨道
+	OutputWidth   int             // 输出宽度
+	OutputHeight  int             // 输出高度
+	OutputFPS     float64         // 输出帧率
+	TotalDuration time.Duration   // 总时长
+}
+
+// VideoTrack 视频轨道
+type VideoTrack struct {
+	ID        string        // 轨道ID
+	Source    string        // 视频源路径
+	StartTime time.Duration // 开始时间
+	Duration  time.Duration // 持续时间
+	X         int           // X坐标
+	Y         int           // Y坐标
+	Width     int           // 宽度
+	Height    int           // 高度
+	Opacity   float64       // 透明度
+	ZIndex    int           // 层级
+}
+
+// AudioTrack 音频轨道
+type AudioTrack struct {
+	ID        string        // 轨道ID
+	Source    string        // 音频源路径
+	StartTime time.Duration // 开始时间
+	Duration  time.Duration // 持续时间
+	Volume    float64       // 音量
+	FadeIn    time.Duration // 淡入时长
+	FadeOut   time.Duration // 淡出时长
+	Loop      bool          // 是否循环
+}
+
+// ImageTrack 图片轨道
+type ImageTrack struct {
+	ID        string        // 轨道ID
+	Source    string        // 图片源路径
+	StartTime time.Duration // 开始时间
+	Duration  time.Duration // 持续时间
+	X         int           // X坐标
+	Y         int           // Y坐标
+	Width     int           // 宽度
+	Height    int           // 高度
+	Opacity   float64       // 透明度
+	ZIndex    int           // 层级
+}
+
+// TextTrack 文字轨道
+type TextTrack struct {
+	ID         string        // 轨道ID
+	Text       string        // 文字内容
+	StartTime  time.Duration // 开始时间
+	Duration   time.Duration // 持续时间
+	X          int           // X坐标
+	Y          int           // Y坐标
+	FontSize   int           // 字体大小
+	FontColor  string        // 字体颜色
+	FontFamily string        // 字体族
+	Opacity    float64       // 透明度
+	ZIndex     int           // 层级
+}
+
+// OverlayTrack 叠加轨道
+type OverlayTrack struct {
+	ID        string        // 轨道ID
+	Source    string        // 叠加源路径
+	StartTime time.Duration // 开始时间
+	Duration  time.Duration // 持续时间
+	X         int           // X坐标
+	Y         int           // Y坐标
+	Width     int           // 宽度
+	Height    int           // 高度
+	Opacity   float64       // 透明度
+	BlendMode string        // 混合模式
+	ZIndex    int           // 层级
+}
 
 // Error 自定义错误类型
 type Error struct {

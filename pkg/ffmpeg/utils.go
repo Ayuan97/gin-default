@@ -119,7 +119,7 @@ func GetSystemInfo() map[string]string {
 	}
 }
 
-// FormatFileSize 格式化文件大小为人类可读的格式
+// FormatFileSize 格式化文件大小为可读的格式
 func FormatFileSize(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {
@@ -133,7 +133,7 @@ func FormatFileSize(bytes int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-// FormatDuration 格式化时长为人类可读的格式
+// FormatDuration 格式化时长为可读的格式
 func FormatDuration(duration time.Duration) string {
 	hours := int(duration.Hours())
 	minutes := int(duration.Minutes()) % 60
