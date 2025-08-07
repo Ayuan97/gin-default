@@ -1447,3 +1447,845 @@ func (ve *VideoEditor) executeSlideshowOperation(ctx context.Context, op *Slides
 
 	return ve.ffmpeg.executeCommandWithProgress(ctx, args, callback, estimatedDuration)
 }
+
+// === 新增高级滤镜链式调用方法 ===
+
+// ApplyColorGrading 应用色彩分级
+func (ve *VideoEditor) ApplyColorGrading(options *ColorGradingOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	operation := &ColorGradingOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeColorGrading,
+			StartTime: 0,
+			Duration:  0, // 应用到整个视频
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// ApplyFilter 应用通用滤镜
+func (ve *VideoEditor) ApplyFilter(filterType FilterType, options *FilterOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		options = &FilterOptions{
+			FilterType: filterType,
+			Intensity:  1.0,
+		}
+	} else {
+		options.FilterType = filterType
+	}
+
+	operation := &FilterOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeFilter,
+			StartTime: options.StartTime,
+			Duration:  options.Duration,
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// ApplyVintageFilter 应用复古滤镜
+func (ve *VideoEditor) ApplyVintageFilter(options *VintageFilterOptions) *VideoEditor {
+	if options == nil {
+		options = &VintageFilterOptions{
+			Sepia:      0.5,
+			Grain:      0.3,
+			Vignette:   0.4,
+			Fade:       0.2,
+			ColorShift: 0.1,
+			Desaturate: 0.3,
+		}
+	}
+
+	filterOptions := &FilterOptions{
+		FilterType: FilterTypeVintage,
+		Intensity:  1.0,
+		Parameters: map[string]interface{}{
+			"sepia":       options.Sepia,
+			"grain":       options.Grain,
+			"vignette":    options.Vignette,
+			"fade":        options.Fade,
+			"scratches":   options.Scratches,
+			"dust_spots":  options.DustSpots,
+			"color_shift": options.ColorShift,
+			"desaturate":  options.Desaturate,
+		},
+	}
+
+	return ve.ApplyFilter(FilterTypeVintage, filterOptions)
+}
+
+// ApplyCinematicFilter 应用电影风格滤镜
+func (ve *VideoEditor) ApplyCinematicFilter(options *CinematicFilterOptions) *VideoEditor {
+	if options == nil {
+		options = &CinematicFilterOptions{
+			AspectRatio:    "21:9",
+			LetterboxColor: "black",
+			ColorGrading:   "teal_orange",
+			FilmGrain:      0.2,
+			Bloom:          0.3,
+			LensFlare:      false,
+			MotionBlur:     0.0,
+		}
+	}
+
+	filterOptions := &FilterOptions{
+		FilterType: FilterTypeCinematic,
+		Intensity:  1.0,
+		Parameters: map[string]interface{}{
+			"aspect_ratio":    options.AspectRatio,
+			"letterbox_color": options.LetterboxColor,
+			"color_grading":   options.ColorGrading,
+			"film_grain":      options.FilmGrain,
+			"bloom":           options.Bloom,
+			"lens_flare":      options.LensFlare,
+			"motion_blur":     options.MotionBlur,
+		},
+	}
+
+	return ve.ApplyFilter(FilterTypeCinematic, filterOptions)
+}
+
+// ApplyBeautyFilter 应用美颜滤镜
+func (ve *VideoEditor) ApplyBeautyFilter(options *BeautyFilterOptions) *VideoEditor {
+	if options == nil {
+		options = &BeautyFilterOptions{
+			SkinSmoothing:   0.5,
+			SkinBrightening: 0.3,
+			EyeEnhancement:  0.4,
+			TeethWhitening:  0.2,
+			FaceSlimming:    0.0,
+			EyeEnlarging:    0.0,
+			NoseReshaping:   0.0,
+			LipEnhancement:  0.2,
+		}
+	}
+
+	filterOptions := &FilterOptions{
+		FilterType: FilterTypeBeauty,
+		Intensity:  1.0,
+		Parameters: map[string]interface{}{
+			"skin_smoothing":   options.SkinSmoothing,
+			"skin_brightening": options.SkinBrightening,
+			"eye_enhancement":  options.EyeEnhancement,
+			"teeth_whitening":  options.TeethWhitening,
+			"face_slimming":    options.FaceSlimming,
+			"eye_enlarging":    options.EyeEnlarging,
+			"nose_reshaping":   options.NoseReshaping,
+			"lip_enhancement":  options.LipEnhancement,
+		},
+	}
+
+	return ve.ApplyFilter(FilterTypeBeauty, filterOptions)
+}
+
+// ApplySharpening 应用锐化滤镜
+func (ve *VideoEditor) ApplySharpening(options *SharpeningOptions) *VideoEditor {
+	if options == nil {
+		options = &SharpeningOptions{
+			Amount:    1.0,
+			Radius:    1.0,
+			Threshold: 0.0,
+			Method:    "unsharp",
+		}
+	}
+
+	filterOptions := &FilterOptions{
+		FilterType: FilterTypeSharpening,
+		Intensity:  1.0,
+		Parameters: map[string]interface{}{
+			"amount":    options.Amount,
+			"radius":    options.Radius,
+			"threshold": options.Threshold,
+			"method":    options.Method,
+		},
+	}
+
+	return ve.ApplyFilter(FilterTypeSharpening, filterOptions)
+}
+
+// ApplyDenoising 应用降噪滤镜
+func (ve *VideoEditor) ApplyDenoising(options *DenoisingOptions) *VideoEditor {
+	if options == nil {
+		options = &DenoisingOptions{
+			Strength:     0.5,
+			Method:       "nlmeans",
+			TemporalNR:   true,
+			SpatialNR:    true,
+			PreserveEdge: true,
+		}
+	}
+
+	filterOptions := &FilterOptions{
+		FilterType: FilterTypeDenoising,
+		Intensity:  1.0,
+		Parameters: map[string]interface{}{
+			"strength":      options.Strength,
+			"method":        options.Method,
+			"temporal_nr":   options.TemporalNR,
+			"spatial_nr":    options.SpatialNR,
+			"preserve_edge": options.PreserveEdge,
+		},
+	}
+
+	return ve.ApplyFilter(FilterTypeDenoising, filterOptions)
+}
+
+// === 转场效果链式调用方法 ===
+
+// AddAdvancedTransition 添加高级转场效果
+func (ve *VideoEditor) AddAdvancedTransition(transitionType AdvancedTransitionType, duration time.Duration, options *AdvancedTransitionOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		options = &AdvancedTransitionOptions{
+			Type:     transitionType,
+			Duration: duration,
+			Easing:   "ease_in_out",
+		}
+	} else {
+		options.Type = transitionType
+		options.Duration = duration
+	}
+
+	operation := &AdvancedTransitionOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeTransition,
+			StartTime: 0,
+			Duration:  duration,
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// AddFadeTransition 添加淡入淡出转场
+func (ve *VideoEditor) AddFadeTransition(duration time.Duration) *VideoEditor {
+	return ve.AddAdvancedTransition(TransitionFade, duration, nil)
+}
+
+// AddDissolveTransition 添加溶解转场
+func (ve *VideoEditor) AddDissolveTransition(duration time.Duration) *VideoEditor {
+	return ve.AddAdvancedTransition(TransitionDissolve, duration, nil)
+}
+
+// AddWipeTransition 添加擦除转场
+func (ve *VideoEditor) AddWipeTransition(duration time.Duration, direction string) *VideoEditor {
+	options := &AdvancedTransitionOptions{
+		Direction: direction,
+		Easing:    "linear",
+	}
+	return ve.AddAdvancedTransition(TransitionWipe, duration, options)
+}
+
+// AddSlideTransition 添加滑动转场
+func (ve *VideoEditor) AddSlideTransition(duration time.Duration, direction string) *VideoEditor {
+	options := &AdvancedTransitionOptions{
+		Direction: direction,
+		Easing:    "ease_out",
+	}
+	return ve.AddAdvancedTransition(TransitionSlide, duration, options)
+}
+
+// AddZoomTransition 添加缩放转场
+func (ve *VideoEditor) AddZoomTransition(duration time.Duration, intensity float64) *VideoEditor {
+	options := &AdvancedTransitionOptions{
+		Intensity: intensity,
+		Easing:    "ease_in_out",
+	}
+	return ve.AddAdvancedTransition(TransitionZoom, duration, options)
+}
+
+// AddGlitchTransition 添加故障效果转场
+func (ve *VideoEditor) AddGlitchTransition(duration time.Duration, intensity float64) *VideoEditor {
+	options := &AdvancedTransitionOptions{
+		Intensity: intensity,
+		Easing:    "linear",
+	}
+	return ve.AddAdvancedTransition(TransitionGlitch, duration, options)
+}
+
+// === 音频效果链式调用方法 ===
+
+// ApplyAudioEqualizer 应用音频均衡器
+func (ve *VideoEditor) ApplyAudioEqualizer(options *AudioEqualizerOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		options = &AudioEqualizerOptions{
+			Preset:     "balanced",
+			MasterGain: 0,
+		}
+	}
+
+	effectOptions := &AudioEffectOptions{
+		EffectType: AudioEffectCompressor, // 使用压缩器作为示例
+		Intensity:  1.0,
+		Parameters: map[string]interface{}{
+			"preset":      options.Preset,
+			"bands":       options.Bands,
+			"master_gain": options.MasterGain,
+		},
+	}
+
+	operation := &AudioEffectOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeAudioEffect,
+			StartTime: 0,
+			Duration:  0, // 应用到整个音频
+		},
+		Options: effectOptions,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// ApplyAudioEffect 应用音频效果
+func (ve *VideoEditor) ApplyAudioEffect(effectType AudioEffectType, options *AudioEffectOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		options = &AudioEffectOptions{
+			EffectType: effectType,
+			Intensity:  0.5,
+		}
+	} else {
+		options.EffectType = effectType
+	}
+
+	operation := &AudioEffectOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeAudioEffect,
+			StartTime: options.StartTime,
+			Duration:  options.Duration,
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// ApplyReverb 应用混响效果
+func (ve *VideoEditor) ApplyReverb(options *ReverbOptions) *VideoEditor {
+	if options == nil {
+		options = &ReverbOptions{
+			RoomSize:   0.5,
+			Damping:    0.5,
+			WetLevel:   0.3,
+			DryLevel:   0.7,
+			PreDelay:   20,
+			Diffusion:  0.5,
+			ReverbType: "hall",
+		}
+	}
+
+	effectOptions := &AudioEffectOptions{
+		EffectType: AudioEffectReverb,
+		Intensity:  options.WetLevel,
+		Parameters: map[string]interface{}{
+			"room_size":   options.RoomSize,
+			"damping":     options.Damping,
+			"wet_level":   options.WetLevel,
+			"dry_level":   options.DryLevel,
+			"pre_delay":   options.PreDelay,
+			"diffusion":   options.Diffusion,
+			"reverb_type": options.ReverbType,
+		},
+	}
+
+	return ve.ApplyAudioEffect(AudioEffectReverb, effectOptions)
+}
+
+// ApplyCompressor 应用音频压缩器
+func (ve *VideoEditor) ApplyCompressor(options *CompressorOptions) *VideoEditor {
+	if options == nil {
+		options = &CompressorOptions{
+			Threshold:  -20,
+			Ratio:      4.0,
+			Attack:     5,
+			Release:    50,
+			MakeupGain: 0,
+			KneeWidth:  2.5,
+		}
+	}
+
+	effectOptions := &AudioEffectOptions{
+		EffectType: AudioEffectCompressor,
+		Intensity:  options.Ratio / 20.0,
+		Parameters: map[string]interface{}{
+			"threshold":   options.Threshold,
+			"ratio":       options.Ratio,
+			"attack":      options.Attack,
+			"release":     options.Release,
+			"makeup_gain": options.MakeupGain,
+			"knee_width":  options.KneeWidth,
+		},
+	}
+
+	return ve.ApplyAudioEffect(AudioEffectCompressor, effectOptions)
+}
+
+// === 高级字幕链式调用方法 ===
+
+// AddAdvancedSubtitle 添加高级字幕
+func (ve *VideoEditor) AddAdvancedSubtitle(options *AdvancedSubtitleOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		return ve
+	}
+
+	operation := &AdvancedSubtitleOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeAdvancedSubtitle,
+			StartTime: options.StartTime,
+			Duration:  options.Duration,
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// AddAnimatedText 添加动画文字
+func (ve *VideoEditor) AddAnimatedText(text string, animation SubtitleAnimationType, startTime, duration time.Duration) *VideoEditor {
+	options := &AdvancedSubtitleOptions{
+		Text:              text,
+		StartTime:         startTime,
+		Duration:          duration,
+		X:                 100,
+		Y:                 100,
+		FontSize:          24,
+		Color:             "#FFFFFF",
+		Animation:         animation,
+		AnimationDuration: 500 * time.Millisecond,
+	}
+
+	return ve.AddAdvancedSubtitle(options)
+}
+
+// AddLowerThird 添加下三分之一标题
+func (ve *VideoEditor) AddLowerThird(title, subtitle string, startTime, duration time.Duration) *VideoEditor {
+	// 主标题
+	titleOptions := &AdvancedSubtitleOptions{
+		Text:              title,
+		StartTime:         startTime,
+		Duration:          duration,
+		X:                 50,
+		Y:                 -150,
+		FontSize:          32,
+		FontWeight:        "bold",
+		Color:             "#FFFFFF",
+		BackgroundColor:   "#000000AA",
+		Alignment:         "left",
+		VerticalAlign:     "bottom",
+		Animation:         SubtitleAnimationSlideIn,
+		AnimationDuration: 500 * time.Millisecond,
+	}
+
+	ve.AddAdvancedSubtitle(titleOptions)
+
+	// 副标题
+	subtitleOptions := &AdvancedSubtitleOptions{
+		Text:              subtitle,
+		StartTime:         startTime,
+		Duration:          duration,
+		X:                 50,
+		Y:                 -110,
+		FontSize:          20,
+		FontWeight:        "normal",
+		Color:             "#CCCCCC",
+		BackgroundColor:   "#000000AA",
+		Alignment:         "left",
+		VerticalAlign:     "bottom",
+		Animation:         SubtitleAnimationSlideIn,
+		AnimationDuration: 500 * time.Millisecond,
+	}
+
+	return ve.AddAdvancedSubtitle(subtitleOptions)
+}
+
+// ApplySubtitleTemplate 应用字幕模板
+func (ve *VideoEditor) ApplySubtitleTemplate(text, templateName string, startTime, duration time.Duration) *VideoEditor {
+	// 这里可以根据模板名称设置不同的样式
+	var options *AdvancedSubtitleOptions
+
+	switch templateName {
+	case "standard":
+		options = &AdvancedSubtitleOptions{
+			Text:          text,
+			StartTime:     startTime,
+			Duration:      duration,
+			FontSize:      24,
+			FontWeight:    "normal",
+			Color:         "#FFFFFF",
+			OutlineColor:  "#000000",
+			OutlineWidth:  2,
+			ShadowColor:   "#000000",
+			ShadowOffsetX: 2,
+			ShadowOffsetY: 2,
+			ShadowBlur:    3,
+			Alignment:     "center",
+			VerticalAlign: "bottom",
+			Animation:     SubtitleAnimationFadeIn,
+		}
+	case "cinematic":
+		options = &AdvancedSubtitleOptions{
+			Text:            text,
+			StartTime:       startTime,
+			Duration:        duration,
+			FontSize:        28,
+			FontWeight:      "normal",
+			Color:           "#F0F0F0",
+			BackgroundColor: "#00000080",
+			OutlineColor:    "#000000",
+			OutlineWidth:    1,
+			Alignment:       "center",
+			VerticalAlign:   "bottom",
+			LineSpacing:     1.2,
+			Animation:       SubtitleAnimationTypewriter,
+		}
+	case "gaming":
+		options = &AdvancedSubtitleOptions{
+			Text:          text,
+			StartTime:     startTime,
+			Duration:      duration,
+			FontSize:      26,
+			FontWeight:    "bold",
+			Color:         "#00FF00",
+			OutlineColor:  "#000000",
+			OutlineWidth:  3,
+			ShadowColor:   "#00AA00",
+			ShadowOffsetX: 0,
+			ShadowOffsetY: 0,
+			ShadowBlur:    5,
+			Alignment:     "center",
+			VerticalAlign: "bottom",
+			Animation:     SubtitleAnimationGlow,
+		}
+	default:
+		// 默认标准模板
+		options = &AdvancedSubtitleOptions{
+			Text:          text,
+			StartTime:     startTime,
+			Duration:      duration,
+			FontSize:      24,
+			Color:         "#FFFFFF",
+			Alignment:     "center",
+			VerticalAlign: "bottom",
+			Animation:     SubtitleAnimationFadeIn,
+		}
+	}
+
+	return ve.AddAdvancedSubtitle(options)
+}
+
+// === 高级合成链式调用方法 ===
+
+// ApplyChromaKey 应用绿幕抠图
+func (ve *VideoEditor) ApplyChromaKey(options *ChromaKeyOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		options = &ChromaKeyOptions{
+			KeyColor:         "#00FF00",
+			Tolerance:        0.3,
+			Softness:         0.1,
+			SpillSuppression: 0.1,
+			EdgeFeather:      0.0,
+			LightWrap:        0.0,
+			ColorCorrection:  false,
+		}
+	}
+
+	operation := &ChromaKeyOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeChromaKey,
+			StartTime: 0,
+			Duration:  0, // 应用到整个视频
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// ApplyMask 应用遮罩
+func (ve *VideoEditor) ApplyMask(options *MaskOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		return ve
+	}
+
+	operation := &MaskOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeMask,
+			StartTime: options.StartTime,
+			Duration:  options.Duration,
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// AddParticleEffect 添加粒子效果
+func (ve *VideoEditor) AddParticleEffect(options *ParticleEffectOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		return ve
+	}
+
+	operation := &ParticleEffectOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeParticleEffect,
+			StartTime: options.StartTime,
+			Duration:  options.Duration,
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// CreateSnowEffect 创建雪花效果
+func (ve *VideoEditor) CreateSnowEffect(intensity float64, startTime, duration time.Duration) *VideoEditor {
+	options := &ParticleEffectOptions{
+		ParticleType: ParticleTypeSnow,
+		Count:        int(intensity * 200),
+		Size:         2.0,
+		Speed:        50.0,
+		Direction:    270, // 向下
+		Spread:       30,
+		Gravity:      0.8,
+		Wind:         0.1,
+		Opacity:      0.8,
+		Color:        "#FFFFFF",
+		BlendMode:    "screen",
+		StartTime:    startTime,
+		Duration:     duration,
+		EmissionRate: intensity * 10,
+		LifeTime:     5.0,
+	}
+
+	return ve.AddParticleEffect(options)
+}
+
+// CreateRainEffect 创建雨滴效果
+func (ve *VideoEditor) CreateRainEffect(intensity float64, startTime, duration time.Duration) *VideoEditor {
+	options := &ParticleEffectOptions{
+		ParticleType: ParticleTypeRain,
+		Count:        int(intensity * 300),
+		Size:         1.0,
+		Speed:        100.0,
+		Direction:    260, // 稍微倾斜
+		Spread:       10,
+		Gravity:      1.2,
+		Wind:         0.3,
+		Opacity:      0.6,
+		Color:        "#87CEEB",
+		BlendMode:    "overlay",
+		StartTime:    startTime,
+		Duration:     duration,
+		EmissionRate: intensity * 20,
+		LifeTime:     3.0,
+	}
+
+	return ve.AddParticleEffect(options)
+}
+
+// CreateFireEffect 创建火焰效果
+func (ve *VideoEditor) CreateFireEffect(intensity float64, startTime, duration time.Duration) *VideoEditor {
+	options := &ParticleEffectOptions{
+		ParticleType: ParticleTypeFire,
+		Count:        int(intensity * 100),
+		Size:         3.0,
+		Speed:        30.0,
+		Direction:    90, // 向上
+		Spread:       45,
+		Gravity:      -0.5, // 负重力，向上飘
+		Wind:         0.2,
+		Opacity:      0.9,
+		Color:        "#FF4500",
+		BlendMode:    "screen",
+		StartTime:    startTime,
+		Duration:     duration,
+		EmissionRate: intensity * 15,
+		LifeTime:     2.0,
+	}
+
+	return ve.AddParticleEffect(options)
+}
+
+// CreateSparkleEffect 创建闪光效果
+func (ve *VideoEditor) CreateSparkleEffect(intensity float64, startTime, duration time.Duration) *VideoEditor {
+	options := &ParticleEffectOptions{
+		ParticleType: ParticleTypeSparkle,
+		Count:        int(intensity * 50),
+		Size:         4.0,
+		Speed:        10.0,
+		Direction:    0,
+		Spread:       360, // 全方向
+		Gravity:      0.0,
+		Wind:         0.0,
+		Opacity:      1.0,
+		Color:        "#FFD700",
+		BlendMode:    "screen",
+		StartTime:    startTime,
+		Duration:     duration,
+		EmissionRate: intensity * 5,
+		LifeTime:     1.5,
+	}
+
+	return ve.AddParticleEffect(options)
+}
+
+// AddMotionGraphics 添加动态图形
+func (ve *VideoEditor) AddMotionGraphics(options *MotionGraphicsOptions) *VideoEditor {
+	ve.mu.Lock()
+	defer ve.mu.Unlock()
+
+	if ve.cancelled {
+		return ve
+	}
+
+	if options == nil {
+		return ve
+	}
+
+	operation := &MotionGraphicsOperation{
+		BaseOperation: BaseOperation{
+			Type:      OpTypeMotionGraphics,
+			StartTime: options.StartTime,
+			Duration:  options.Duration,
+		},
+		Options: options,
+	}
+
+	ve.operations = append(ve.operations, operation)
+	return ve
+}
+
+// AddLowerThirdGraphics 添加下三分之一图形
+func (ve *VideoEditor) AddLowerThirdGraphics(title string, startTime, duration time.Duration) *VideoEditor {
+	options := &MotionGraphicsOptions{
+		GraphicsType: MotionGraphicsLowerThird,
+		Template:     "default",
+		Text:         title,
+		StartTime:    startTime,
+		Duration:     duration,
+		X:            50,
+		Y:            -150,
+		Width:        400,
+		Height:       80,
+		Color:        "#0066CC",
+		AccentColor:  "#FFFFFF",
+		Animation:    "slide_in",
+	}
+
+	return ve.AddMotionGraphics(options)
+}
+
+// AddProgressBar 添加进度条
+func (ve *VideoEditor) AddProgressBar(startTime, duration time.Duration, x, y, width, height int) *VideoEditor {
+	options := &MotionGraphicsOptions{
+		GraphicsType: MotionGraphicsProgress,
+		Template:     "default",
+		Text:         "",
+		StartTime:    startTime,
+		Duration:     duration,
+		X:            x,
+		Y:            y,
+		Width:        width,
+		Height:       height,
+		Color:        "#0066CC",
+		AccentColor:  "#FFFFFF",
+		Animation:    "linear",
+	}
+
+	return ve.AddMotionGraphics(options)
+}
+
+// AddCounter 添加计数器
+func (ve *VideoEditor) AddCounter(startTime, duration time.Duration, x, y int) *VideoEditor {
+	options := &MotionGraphicsOptions{
+		GraphicsType: MotionGraphicsCounter,
+		Template:     "default",
+		Text:         "0",
+		StartTime:    startTime,
+		Duration:     duration,
+		X:            x,
+		Y:            y,
+		Width:        100,
+		Height:       50,
+		Color:        "#FFFFFF",
+		AccentColor:  "#0066CC",
+		Animation:    "count_up",
+	}
+
+	return ve.AddMotionGraphics(options)
+}
