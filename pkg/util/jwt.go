@@ -11,6 +11,11 @@ var jwtSecret []byte
 type Claims struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	// 兼容并扩展多租户与管理员信息
+	AdminUserID int   `json:"admin_user_id,omitempty"`
+	IsSuper     bool  `json:"is_super,omitempty"`
+	TenantID    int   `json:"tenant_id,omitempty"`
+	TenantIDs   []int `json:"tenant_ids,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -20,9 +25,9 @@ func GenerateToken(username, password string) (string, error) {
 	expireTime := nowTime.Add(3 * time.Hour)
 
 	claims := Claims{
-		EncodeMD5(username),
-		EncodeMD5(password),
-		jwt.RegisteredClaims{
+		Username: EncodeMD5(username),
+		Password: EncodeMD5(password),
+		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expireTime),
 			Issuer:    "gin-blog",
 		},

@@ -15,11 +15,7 @@ import (
 // JWT is jwt middleware
 func JWT() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Next()
-		return
-		var code int
-
-		code = e.SUCCESS
+		var code int = e.SUCCESS
 		token := c.GetHeader("Authorization")
 		token = strings.Replace(token, "Bearer ", "", -1)
 		token = strings.Replace(token, "Bearer", "", -1)
@@ -36,8 +32,29 @@ func JWT() gin.HandlerFunc {
 				}
 			}
 			if claims != nil {
-				userId, _ := strconv.Atoi(claims.Subject)
-				c.Set("userId", userId)
+				// 兼容旧字段 Subject，同时支持新字段 AdminUserID
+				userId := 0
+				if claims.AdminUserID != 0 {
+					userId = claims.AdminUserID
+				} else {
+					// 兼容旧：Subject 存储用户ID
+					if claims.Subject != "" {
+						userId, _ = strconv.Atoi(claims.Subject)
+					}
+				}
+				if userId != 0 {
+					c.Set("userId", userId)
+				}
+				// 多租户注入
+				if claims.IsSuper {
+					c.Set("isSuper", true)
+				}
+				if claims.TenantID != 0 {
+					c.Set("tenantId", claims.TenantID)
+				}
+				if len(claims.TenantIDs) > 0 {
+					c.Set("tenantIds", claims.TenantIDs)
+				}
 			}
 
 		}

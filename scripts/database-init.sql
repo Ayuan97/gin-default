@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS `ay_admin_users` (
 -- ===================================
 CREATE TABLE IF NOT EXISTS `ay_roles` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '角色ID，主键',
+  `tenant_id` bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT '租户ID；0表示系统级角色',
   `name` varchar(50) NOT NULL COMMENT '角色标识名，英文，如admin、editor',
   `display_name` varchar(100) NOT NULL DEFAULT '' COMMENT '角色显示名称，中文，如管理员、编辑员',
   `description` varchar(500) DEFAULT '' COMMENT '角色描述信息',
@@ -87,6 +88,7 @@ CREATE TABLE IF NOT EXISTS `ay_roles` (
   `deleted_at` timestamp NULL DEFAULT NULL COMMENT '软删除时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_name` (`name`) COMMENT '角色名唯一索引',
+  KEY `idx_role_tenant` (`tenant_id`) COMMENT '角色租户索引',
   KEY `idx_status` (`status`) COMMENT '状态索引',
   KEY `idx_level` (`level`) COMMENT '等级索引',
   KEY `idx_sort_order` (`sort_order`) COMMENT '排序索引'
@@ -104,6 +106,7 @@ CREATE TABLE IF NOT EXISTS `ay_permissions` (
   `action` varchar(50) NOT NULL DEFAULT '' COMMENT '操作类型：read、write、delete、create、update等',
   `resource` varchar(50) NOT NULL DEFAULT '' COMMENT '资源类型：user、role、permission、system等',
   `route` varchar(200) DEFAULT '' COMMENT '对应的路由规则，支持通配符',
+  `component` varchar(200) DEFAULT '' COMMENT '前端组件路径',
   `method` varchar(20) DEFAULT '' COMMENT 'HTTP方法：GET、POST、PUT、DELETE、*',
   `parent_id` bigint(20) DEFAULT 0 COMMENT '父权限ID，支持权限树结构',
   `level` int(11) DEFAULT 1 COMMENT '权限层级，根权限为1',
@@ -149,18 +152,48 @@ CREATE TABLE IF NOT EXISTS `ay_admin_user_roles` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '关联ID，主键',
   `admin_user_id` bigint(20) unsigned NOT NULL COMMENT '管理员ID，外键关联ay_admin_users.id',
   `role_id` bigint(20) unsigned NOT NULL COMMENT '角色ID，外键关联ay_roles.id',
+  `tenant_id` bigint(20) unsigned NOT NULL DEFAULT 0 COMMENT '租户ID',
   `assigned_by` bigint(20) DEFAULT 0 COMMENT '分配者ID，记录是谁给这个用户分配的角色',
   `expires_at` timestamp NULL DEFAULT NULL COMMENT '角色过期时间，NULL表示永不过期',
   `created_at` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT '分配时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_admin_role` (`admin_user_id`, `role_id`) COMMENT '用户角色组合唯一索引',
+  UNIQUE KEY `uk_admin_role` (`admin_user_id`, `role_id`, `tenant_id`) COMMENT '用户角色组合唯一索引',
   KEY `idx_admin_user_id` (`admin_user_id`) COMMENT '管理员ID索引',
   KEY `idx_role_id` (`role_id`) COMMENT '角色ID索引',
+  KEY `idx_admin_role_tenant` (`tenant_id`) COMMENT '租户索引',
   KEY `idx_assigned_by` (`assigned_by`) COMMENT '分配者索引',
   KEY `idx_expires_at` (`expires_at`) COMMENT '过期时间索引',
   CONSTRAINT `fk_admin_user_roles_admin` FOREIGN KEY (`admin_user_id`) REFERENCES `ay_admin_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_admin_user_roles_role` FOREIGN KEY (`role_id`) REFERENCES `ay_roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员角色关联表-定义管理员拥有哪些角色';
+-- ===================================
+-- 租户表 & 租户权限白名单
+-- ===================================
+CREATE TABLE IF NOT EXISTS `ay_tenants` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '租户ID，主键',
+  `code` varchar(50) NOT NULL COMMENT '租户编码，唯一',
+  `name` varchar(100) NOT NULL COMMENT '租户名称',
+  `status` tinyint(1) DEFAULT 1 COMMENT '状态：1-启用，0-禁用',
+  `plan` varchar(50) DEFAULT '' COMMENT '套餐/版本',
+  `owner_user_id` bigint(20) DEFAULT 0 COMMENT '拥有者管理员ID',
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted_at` timestamp NULL DEFAULT NULL COMMENT '软删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_code` (`code`),
+  KEY `idx_tenant_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='租户表';
+
+CREATE TABLE IF NOT EXISTS `ay_tenant_permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `tenant_id` bigint(20) unsigned NOT NULL COMMENT '租户ID',
+  `permission_id` bigint(20) unsigned NOT NULL COMMENT '权限ID',
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tenant_permission` (`tenant_id`,`permission_id`),
+  KEY `idx_tenant_id` (`tenant_id`),
+  KEY `idx_permission_id` (`permission_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='租户权限白名单';
 
 -- ===================================
 -- 默认角色数据 - 系统初始角色
@@ -186,13 +219,13 @@ INSERT IGNORE INTO `ay_permissions` (`name`, `display_name`, `description`, `mod
 ('admin.user.status', '用户状态', '修改用户状态（启用/禁用）', 'admin', 'update', 'user', '/admin/users/*/status', 'PUT', 1, 2, 6, 0, '', 1),
 
 -- 角色管理权限
-('admin.role', '角色管理', '角色管理模块主菜单', 'admin', 'menu', 'role', '/admin/roles', '*', 0, 1, 2, 1, 'fas fa-user-tag', 1),
-('admin.role.list', '角色列表', '查看角色列表', 'admin', 'read', 'role', '/admin/roles', 'GET', 8, 2, 1, 0, '', 1),
-('admin.role.view', '查看角色', '查看角色详细信息', 'admin', 'read', 'role', '/admin/roles/*', 'GET', 8, 2, 2, 0, '', 1),
-('admin.role.create', '创建角色', '创建新角色', 'admin', 'create', 'role', '/admin/roles', 'POST', 8, 2, 3, 0, '', 1),
-('admin.role.update', '修改角色', '修改角色信息', 'admin', 'update', 'role', '/admin/roles/*', 'PUT', 8, 2, 4, 0, '', 1),
-('admin.role.delete', '删除角色', '删除角色', 'admin', 'delete', 'role', '/admin/roles/*', 'DELETE', 8, 2, 5, 0, '', 1),
-('admin.role.permission', '角色权限', '管理角色权限分配', 'admin', 'update', 'role', '/admin/roles/*/permissions', 'PUT', 8, 2, 6, 0, '', 1),
+('admin.role', '角色管理', '角色管理模块主菜单', 'admin', 'menu', 'role', '/admin/roles', '', '*', 0, 1, 2, 1, 'fas fa-user-tag', 1),
+('admin.role.list', '角色列表', '查看角色列表', 'admin', 'read', 'role', '/admin/roles', '/roles/index', 'GET', 8, 2, 1, 0, '', 1),
+('admin.role.view', '查看角色', '查看角色详细信息', 'admin', 'read', 'role', '/admin/roles/*', '/roles/detail', 'GET', 8, 2, 2, 0, '', 1),
+('admin.role.create', '创建角色', '创建新角色', 'admin', 'create', 'role', '/admin/roles', '/roles/create', 'POST', 8, 2, 3, 0, '', 1),
+('admin.role.update', '修改角色', '修改角色信息', 'admin', 'update', 'role', '/admin/roles/*', '/roles/edit', 'PUT', 8, 2, 4, 0, '', 1),
+('admin.role.delete', '删除角色', '删除角色', 'admin', 'delete', 'role', '/admin/roles/*', '', 'DELETE', 8, 2, 5, 0, '', 1),
+('admin.role.permission', '角色权限', '管理角色权限分配', 'admin', 'update', 'role', '/admin/roles/*/permissions', '/roles/permission', 'PUT', 8, 2, 6, 0, '', 1),
 
 -- 权限管理权限  
 ('admin.permission', '权限管理', '权限管理模块主菜单', 'admin', 'menu', 'permission', '/admin/permissions', '*', 0, 1, 3, 1, 'fas fa-key', 1),
@@ -252,6 +285,29 @@ INSERT IGNORE INTO `ay_admin_users` (
     NOW(), 
     1
 );
+
+-- ===================================
+-- 默认租户 & 白名单初始化
+-- ===================================
+-- 创建默认租户
+INSERT IGNORE INTO `ay_tenants` (`code`, `name`, `status`, `plan`, `owner_user_id`) VALUES
+('default', '默认租户', 1, 'standard', 0);
+
+-- 将默认管理员绑定到默认租户的超级管理员角色
+INSERT IGNORE INTO `ay_admin_user_roles` (`admin_user_id`, `role_id`, `tenant_id`, `assigned_by`)
+SELECT au.id, r.id, t.id, 0
+FROM `ay_admin_users` au, `ay_roles` r, `ay_tenants` t
+WHERE au.username = 'admin' AND r.name = 'super_admin' AND t.code = 'default';
+
+-- 将普通管理员绑定到默认租户的系统管理员角色
+INSERT IGNORE INTO `ay_admin_user_roles` (`admin_user_id`, `role_id`, `tenant_id`, `assigned_by`)
+SELECT au.id, r.id, t.id, 1
+FROM `ay_admin_users` au, `ay_roles` r, `ay_tenants` t
+WHERE au.username = 'manager' AND r.name = 'admin' AND t.code = 'default';
+
+-- 默认租户白名单：允许所有权限（菜单树会仅展示 is_menu=1 的权限）
+INSERT IGNORE INTO `ay_tenant_permissions` (`tenant_id`, `permission_id`)
+SELECT t.id, p.id FROM `ay_tenants` t, `ay_permissions` p WHERE t.code = 'default';
 
 -- ===================================
 -- 角色权限分配 - 给角色分配相应权限

@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"justus/internal/container"
+	"justus/internal/models"
 	"justus/pkg/app"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,11 @@ type RoleRequest struct {
 	Status      int      `json:"status"`
 }
 
+// UpdateRolePermissionsRequest 更新角色权限请求
+type UpdateRolePermissionsRequest struct {
+	PermissionIDs []uint `json:"permission_ids" binding:"required"`
+}
+
 // GetRoles 获取角色列表
 func (rc *RoleController) GetRoles(c *gin.Context) {
 	appG := app.Gin{C: c}
@@ -53,33 +59,20 @@ func (rc *RoleController) GetRoles(c *gin.Context) {
 	keyword := c.Query("keyword")
 	status := c.Query("status")
 
-	rc.logger.Infof("Admin getting roles list: page=%d, limit=%d, keyword=%s, status=%s", page, limit, keyword, status)
-
-	// TODO: 实现获取角色列表逻辑
-	roles := []gin.H{
-		{
-			"id":           1,
-			"name":         "super_admin",
-			"display_name": "超级管理员",
-			"description":  "拥有所有权限的超级管理员",
-			"permissions":  []string{"*"},
-			"status":       1,
-			"created_at":   "2024-01-01 00:00:00",
-			"updated_at":   "2024-01-01 00:00:00",
-		},
-		{
-			"id":           2,
-			"name":         "admin",
-			"display_name": "管理员",
-			"description":  "普通管理员权限",
-			"permissions":  []string{"user.read", "user.write", "system.read"},
-			"status":       1,
-			"created_at":   "2024-01-01 00:00:00",
-			"updated_at":   "2024-01-01 00:00:00",
-		},
+	tenantVal, ok := c.Get("tenantId")
+	if !ok {
+		appG.InvalidParams()
+		return
 	}
+	tenantID := uint(tenantVal.(int))
 
-	total := int64(len(roles))
+	rc.logger.Infof("Admin getting roles list: tenant_id=%d, page=%d, limit=%d, keyword=%s, status=%s", tenantID, page, limit, keyword, status)
+
+	roles, total, err := models.ListTenantRoles(tenantID, keyword, status, page, limit)
+	if err != nil {
+		appG.Error(50000)
+		return
+	}
 
 	appG.Success(gin.H{
 		"roles": roles,
@@ -106,24 +99,26 @@ func (rc *RoleController) GetRole(c *gin.Context) {
 		return
 	}
 
-	rc.logger.Infof("Admin getting role details: id=%d", id)
-
-	// TODO: 实现获取角色详情逻辑
-	role := gin.H{
-		"id":           id,
-		"name":         "admin",
-		"display_name": "管理员",
-		"description":  "普通管理员权限",
-		"permissions":  []string{"user.read", "user.write", "system.read"},
-		"status":       1,
-		"created_at":   "2024-01-01 00:00:00",
-		"updated_at":   "2024-01-01 00:00:00",
-		"users_count":  5, // 使用该角色的用户数量
+	tenantVal, ok := c.Get("tenantId")
+	if !ok {
+		appG.InvalidParams()
+		return
 	}
+	tenantID := uint(tenantVal.(int))
 
-	appG.Success(gin.H{
-		"role": role,
-	})
+	rc.logger.Infof("Admin getting role details: tenant_id=%d, id=%d", tenantID, id)
+
+	role, err := models.GetRoleByIDForTenant(uint(id), tenantID)
+	if err != nil {
+		appG.Error(50000)
+		return
+	}
+	permIDs, err := models.GetPermissionIDsOfRole(role.ID)
+	if err != nil {
+		appG.Error(50000)
+		return
+	}
+	appG.Success(gin.H{"role": role, "permission_ids": permIDs})
 }
 
 // CreateRole 创建角色
@@ -137,21 +132,22 @@ func (rc *RoleController) CreateRole(c *gin.Context) {
 		return
 	}
 
-	rc.logger.Infof("Admin creating role: name=%s", req.Name)
+	tenantVal, ok := c.Get("tenantId")
+	if !ok {
+		appG.InvalidParams()
+		return
+	}
+	tenantID := uint(tenantVal.(int))
 
-	// TODO: 实现创建角色逻辑
-	// 1. 验证角色名称是否重复
-	// 2. 验证权限是否有效
-	// 3. 创建角色记录
+	rc.logger.Infof("Admin creating role: tenant_id=%d, name=%s", tenantID, req.Name)
 
-	roleID := 1 // 假设创建成功后的ID
-
-	rc.logger.Infof("Role created successfully: id=%d, name=%s", roleID, req.Name)
-
-	appG.Success(gin.H{
-		"message": "角色创建成功",
-		"role_id": roleID,
-	})
+	// 创建角色
+	role, err := models.CreateRoleForTenant(tenantID, req.Name, req.Name, req.Description, req.Status)
+	if err != nil {
+		appG.Error(50000)
+		return
+	}
+	appG.Success(gin.H{"message": "角色创建成功", "role_id": role.ID})
 }
 
 // UpdateRole 更新角色
@@ -172,19 +168,58 @@ func (rc *RoleController) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	rc.logger.Infof("Admin updating role: id=%d, name=%s", id, req.Name)
+	tenantVal, ok := c.Get("tenantId")
+	if !ok {
+		appG.InvalidParams()
+		return
+	}
+	tenantID := uint(tenantVal.(int))
 
-	// TODO: 实现更新角色逻辑
-	// 1. 检查角色是否存在
-	// 2. 验证权限是否有效
-	// 3. 更新角色信息
+	rc.logger.Infof("Admin updating role: tenant_id=%d, id=%d, name=%s", tenantID, id, req.Name)
 
-	rc.logger.Infof("Role updated successfully: id=%d", id)
+	if err := models.UpdateRoleForTenant(uint(id), tenantID, req.Name, req.Description, req.Status); err != nil {
+		appG.Error(50000)
+		return
+	}
+	appG.Success(gin.H{"message": "角色更新成功", "role_id": id})
+}
 
-	appG.Success(gin.H{
-		"message": "角色更新成功",
-		"role_id": id,
-	})
+// UpdateRolePermissions 覆盖式更新角色权限
+func (rc *RoleController) UpdateRolePermissions(c *gin.Context) {
+	appG := app.Gin{C: c}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		appG.InvalidParams()
+		return
+	}
+
+	tenantVal, ok := c.Get("tenantId")
+	if !ok {
+		appG.InvalidParams()
+		return
+	}
+	tenantID := uint(tenantVal.(int))
+
+	// 校验角色归属
+	role, err := models.GetRoleByIDForTenant(uint(id), tenantID)
+	if err != nil || role == nil {
+		appG.Error(50000)
+		return
+	}
+
+	var req UpdateRolePermissionsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		appG.InvalidParams()
+		return
+	}
+
+	if err := models.ReplaceRolePermissions(uint(id), req.PermissionIDs); err != nil {
+		appG.Error(50000)
+		return
+	}
+	appG.Success(gin.H{"message": "权限更新成功", "role_id": id})
 }
 
 // DeleteRole 删除角色
@@ -198,19 +233,20 @@ func (rc *RoleController) DeleteRole(c *gin.Context) {
 		return
 	}
 
-	rc.logger.Infof("Admin deleting role: id=%d", id)
+	tenantVal, ok := c.Get("tenantId")
+	if !ok {
+		appG.InvalidParams()
+		return
+	}
+	tenantID := uint(tenantVal.(int))
 
-	// TODO: 实现删除角色逻辑
-	// 1. 检查角色是否存在
-	// 2. 检查是否有用户在使用该角色
-	// 3. 如果有用户使用，需要决定如何处理（拒绝删除或转移到其他角色）
+	rc.logger.Infof("Admin deleting role: tenant_id=%d, id=%d", tenantID, id)
 
-	rc.logger.Infof("Role deleted successfully: id=%d", id)
-
-	appG.Success(gin.H{
-		"message": "角色删除成功",
-		"role_id": id,
-	})
+	if err := models.DeleteRoleForTenant(uint(id), tenantID); err != nil {
+		appG.Error(50000)
+		return
+	}
+	appG.Success(gin.H{"message": "角色删除成功", "role_id": id})
 }
 
 // GetPermissions 获取所有可用权限列表
@@ -263,8 +299,8 @@ func (rc *RoleController) AssignRole(c *gin.Context) {
 	appG := app.Gin{C: c}
 
 	var req struct {
-		UserID  int   `json:"user_id" binding:"required"`
-		RoleIDs []int `json:"role_ids" binding:"required"`
+		AdminUserID int   `json:"admin_user_id" binding:"required"`
+		RoleIDs     []int `json:"role_ids" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		rc.logger.Errorf("Invalid role assignment request: %v", err)
@@ -272,18 +308,42 @@ func (rc *RoleController) AssignRole(c *gin.Context) {
 		return
 	}
 
-	rc.logger.Infof("Admin assigning roles: user_id=%d, role_ids=%v", req.UserID, req.RoleIDs)
+	// 读取当前租户
+	tenantVal, ok := c.Get("tenantId")
+	if !ok {
+		appG.InvalidParams()
+		return
+	}
+	tenantID := uint(tenantVal.(int))
 
-	// TODO: 实现角色分配逻辑
-	// 1. 检查用户是否存在
-	// 2. 检查角色是否存在
-	// 3. 更新用户角色关联
+	rc.logger.Infof("Admin assigning roles: tenant_id=%d, admin_user_id=%d, role_ids=%v", tenantID, req.AdminUserID, req.RoleIDs)
 
-	rc.logger.Infof("Roles assigned successfully: user_id=%d", req.UserID)
+	// 校验角色是否属于该租户或系统级
+	roles, err := models.GetRolesByIDsAndTenant(req.RoleIDs, tenantID)
+	if err != nil {
+		appG.Error(50000)
+		return
+	}
+	if len(roles) != len(req.RoleIDs) {
+		appG.InvalidParams()
+		return
+	}
+
+	// 覆盖式写入管理员在该租户的角色
+	roleIDsUint := make([]uint, 0, len(req.RoleIDs))
+	for _, rid := range req.RoleIDs {
+		roleIDsUint = append(roleIDsUint, uint(rid))
+	}
+	if err := models.AssignRolesToAdminInTenant(uint(req.AdminUserID), tenantID, roleIDsUint); err != nil {
+		appG.Error(50000)
+		return
+	}
+
+	rc.logger.Infof("Roles assigned successfully: admin_user_id=%d", req.AdminUserID)
 
 	appG.Success(gin.H{
-		"message":  "角色分配成功",
-		"user_id":  req.UserID,
-		"role_ids": req.RoleIDs,
+		"message":       "角色分配成功",
+		"admin_user_id": req.AdminUserID,
+		"role_ids":      req.RoleIDs,
 	})
 }

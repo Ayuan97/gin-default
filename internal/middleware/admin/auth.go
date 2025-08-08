@@ -23,15 +23,22 @@ func Auth() gin.HandlerFunc {
 
 		uid := userId.(int)
 
-		// 检查用户是否为管理员
-		isAdmin, err := models.IsAdmin(uid)
+		// 优先允许超级管理员
+		if isSuper, _ := c.Get("isSuper"); isSuper == true {
+			c.Set("isAdmin", true)
+			c.Set("userRole", "super_admin")
+			c.Next()
+			return
+		}
+
+		// 校验是否管理员用户
+		isAdminUser, err := models.IsAdminUser(uid)
 		if err != nil {
 			appG.Error(e.ERROR_DATABASE_QUERY)
 			c.Abort()
 			return
 		}
-
-		if !isAdmin {
+		if !isAdminUser {
 			appG.Error(e.ERROR_PERMISSION_DENIED)
 			c.Abort()
 			return
@@ -60,14 +67,28 @@ func RequirePermission(permission string) gin.HandlerFunc {
 
 		uid := userId.(int)
 
-		// 检查用户是否有指定权限
-		hasPermission, err := models.HasPermission(uid, permission)
+		// 超级管理员直接放行
+		if isSuper, _ := c.Get("isSuper"); isSuper == true {
+			c.Next()
+			return
+		}
+
+		// 读取上下文租户ID
+		tenantVal, ok := c.Get("tenantId")
+		if !ok {
+			appG.Error(e.INVALID_PARAMS)
+			c.Abort()
+			return
+		}
+		tenantID := uint(tenantVal.(int))
+
+		// 基于租户白名单的权限校验
+		hasPermission, err := models.HasAdminPermissionInTenant(uid, permission, tenantID)
 		if err != nil {
 			appG.Error(e.ERROR_DATABASE_QUERY)
 			c.Abort()
 			return
 		}
-
 		if !hasPermission {
 			appG.Error(e.ERROR_INSUFFICIENT_PERMISSION)
 			c.Abort()

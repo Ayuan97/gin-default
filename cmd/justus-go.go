@@ -5,10 +5,10 @@ import (
 	"log"
 
 	"justus/internal/models"
+	"justus/internal/routers"
 	"justus/pkg/gredis"
 	"justus/pkg/logger"
 	"justus/pkg/setting"
-	"justus/routers"
 )
 
 func init() {

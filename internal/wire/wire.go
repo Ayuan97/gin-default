@@ -42,6 +42,9 @@ func WireApp() (*AppContext, error) {
 	userManagementController := admin.NewUserManagementController(userService, adminUserService, logger)
 	systemController := admin.NewSystemController(logger, cache)
 	roleController := admin.NewRoleController(logger, cache)
+	accessController := admin.NewAccessController(logger, cache)
+	menuController := admin.NewMenuController(logger, cache)
+	authController := admin.NewAuthController(logger, cache)
 
 	// 创建公共控制器
 	healthController := common.NewHealthController(logger, cache)
@@ -58,6 +61,9 @@ func WireApp() (*AppContext, error) {
 		UserManagementController: userManagementController,
 		SystemController:         systemController,
 		RoleController:           roleController,
+		AccessController:         accessController,
+		MenuController:           menuController,
+		AuthController:           authController,
 
 		// 公共控制器
 		HealthController: healthController,
@@ -78,6 +84,9 @@ type AppContext struct {
 	UserManagementController *admin.UserManagementController
 	SystemController         *admin.SystemController
 	RoleController           *admin.RoleController
+	AccessController         *admin.AccessController
+	MenuController           *admin.MenuController
+	AuthController           *admin.AuthController
 
 	// 公共控制器
 	HealthController *common.HealthController
